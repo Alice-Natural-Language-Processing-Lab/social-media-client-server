@@ -1,0 +1,15 @@
+MySQL Installation
+
+MySQL root pswd: ^AVdoDz%9WLEbHKQG7Ed
+
+sudo apt-get update
+sudo apt-get install mysql-server, mysql-workbench
+
+sudo ufw allow mysql #allows external machines to connect to database
+
+systemctl start mysql
+systemctl stop mysql
+
+/usr/bin/mysql -u root -p #start shell and login as root user
+
+SELECT User, Host, authentication_string FROM mysql.user; #view users
