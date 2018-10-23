@@ -7,10 +7,9 @@
 #include <stdio.h>
 #include <string>
 #include <iostream>
+#include "func_lib.h"
 
 using namespace std;
-int serverInit(string port);
-int acceptConnections(int master_fd);
 
 int main(int argc, char *argv[])
 {
@@ -25,7 +24,7 @@ int main(int argc, char *argv[])
 			port = argv[1];
 			break;
 	default:
-			printf("Error: Usage is ./[executable] <port>\n");
+			printf("Error: Usage is ./<executable> [port]\n");
 			return -1;
 	}
 	master_fd = serverInit(port);

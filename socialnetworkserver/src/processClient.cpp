@@ -4,34 +4,17 @@
  *  Created on: Oct 17, 2018
  *      Author: pournami
  */
-#include "structures.h"
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/wait.h>
-#include <time.h>
-#include <sys/resource.h>
-#include <sys/syscall.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <string.h>
-#include <errno.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <iostream>
+#include "func_lib.h"
 
 using namespace std;
 
-#define ERR_LEN 256
-#define DEBUG   printf
+#define ERR_LEN			256
+#define DEBUG	printf
 
 void handleClient(int sock_fd);
 void readRequest(int sock_fd, char *buffer, int req_len);
 int parsePacket(struct request *req);
 int sessionValidity(struct request *req);
-void terminateClient(int slave_fd);
 
 /*
  * client initial setup
@@ -57,7 +40,7 @@ void handleClient(int sock_fd)
 		req_len = sizeof(struct request);
 		/* Read client request */
 		readRequest(sock_fd, buffer, req_len);
-
+		DEBUG("Request received: %s", req->command);
 		/* Parse the packet for valid packet structure */
 		ret = parsePacket(req);
 		if (ret < 0)
@@ -73,9 +56,26 @@ void handleClient(int sock_fd)
 			printf("Error (sessionValidity): session validity could not be established\n");
 			/* TODO : SEND WARNING MESSAGE TO CLIENT "NOT LOGGED IN/SESSION EXPIRED" */
 			terminateClient(sock_fd);
+			return;
+		}
+
+		/* Validate permissions of the client */
+		ret = permissionValidity(req);
+		if (ret < 0) /* permission validity could not be established */
+		{
+			printf("Error (permissionValidity): permission validity could not be established\n");
+			/* TODO : SEND WARNING MESSAGE TO CLIENT "NOT LOGGED IN/PERMISSION DENIED" */
+			terminateClient(sock_fd);
+			return;
 		}
 
 		/* process the request for appropriate permissions */
+		ret = processRequest(req);
+		if (ret < 0)
+		{
+			printf("Error (processRequest): request processing failed\n");
+			return;
+		}
 		/* TODO : function call to file where request processing is taken care of*/
 
 		/* TODO : terminate client connection on appropriate request */
@@ -132,6 +132,17 @@ int parsePacket(struct request *req)
  * return 0(Valid session) -1(Invalid session)
  */
 int sessionValidity(struct request *req)
+{
+	/* TODO : Complete the function */
+	return 0;
+}
+
+/*
+ * permissionValidity() - validate the client session
+ * req: request structure
+ * return 0(Valid session) -1(Invalid session)
+ */
+int permissionValidity(struct request *req)
 {
 	/* TODO : Complete the function */
 	return 0;

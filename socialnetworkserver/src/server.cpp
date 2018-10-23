@@ -4,32 +4,14 @@
  *  Created on: Oct 17, 2018
  *      Author: pournami
  */
-#include "structures.h"
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/wait.h>
-#include <time.h>
-#include <sys/resource.h>
-#include <sys/syscall.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <string.h>
-#include <errno.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <pthread.h>
-#include <string>
-#include <iostream>
+
+#include "func_lib.h"
 
 using namespace std;
 
 #define QUEUE_LEN	15
 #define DEBUG	printf
 
-void handleClient(int sock_fd);
 int serverInit(string port);
 int acceptConnections(int master_fd);
 void terminateClient(int slave_fd);
@@ -74,6 +56,11 @@ int serverInit(string port)
 	return master_fd;
 }
 
+/*
+ * acceptConnections() - accept client connections
+ * master_fd: file descriptor of master socket
+ * return -1(Error) else stay infinitely
+ */
 int acceptConnections(int master_fd)
 {
 	struct sockaddr_in client_addr;
