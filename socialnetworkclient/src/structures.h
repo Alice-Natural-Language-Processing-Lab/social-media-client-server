@@ -13,7 +13,7 @@ using namespace std;
 
 struct request_packet
 {
-	int content_len;
+	unsigned int content_len;
 	unsigned short int userID;
 	char sessionID[SESSIONID_LEN];	
 	char command[COMMAND_LEN];	
@@ -23,7 +23,7 @@ struct request_packet
 
 struct response_packet
 {
-	int content_len;
+	unsigned int content_len;
 	char command[COMMAND_LEN];
 	int request_number;
 	wchar_t content;
