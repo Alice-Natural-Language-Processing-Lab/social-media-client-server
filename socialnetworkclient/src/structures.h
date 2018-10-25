@@ -1,33 +1,30 @@
 /*
  * structures.h
  *
- *  Created on: Oct 17, 2018
- *      Author: jagdeep
+ *  Created on: Oct 24, 2018
+ *      Author: pournami
  */
 
-#include<iostream>
-using namespace std;
+#ifndef STRUCTURES_H_
+#define STRUCTURES_H_
 
-#define COMMAND_LEN 20
-#define SESSIONID_LEN 20
+#define CMD_LEN			100
 
-struct request_packet
+/**
+ * request - structure to store the request message
+ * command: to store the command portion of the request
+ */
+struct request
 {
-	unsigned int content_len;
-	unsigned short int userID;
-	char sessionID[SESSIONID_LEN];	
-	char command[COMMAND_LEN];	
-	int request_number;
-	wchar_t content;
+	char command[CMD_LEN];
 };
 
-struct response_packet
+/**
+ * response - to store the response message
+ */
+struct response
 {
-	unsigned int content_len;
-	char command[COMMAND_LEN];
-	int request_number;
-	wchar_t content;
-};
-	
-	
 
+};
+
+#endif /* STRUCTURES_H_ */
