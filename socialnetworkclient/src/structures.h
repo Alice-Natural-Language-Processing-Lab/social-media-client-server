@@ -11,13 +11,23 @@ using namespace std;
 #define COMMAND_LEN 20
 #define SESSIONID_LEN 20
 
-struct packet
+struct request_packet
 {
 	int content_len;
 	unsigned short int userID;
+	char sessionID[SESSIONID_LEN];	
+	char command[COMMAND_LEN];	
+	int request_number;
 	wchar_t content;
-	char command[COMMAND_LEN];
-	char sessionID[SESSIONID_LEN];
-
 };
+
+struct response_packet
+{
+	int content_len;
+	char command[COMMAND_LEN];
+	int request_number;
+	wchar_t content;
+};
+	
+	
 
