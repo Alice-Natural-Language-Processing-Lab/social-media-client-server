@@ -43,7 +43,7 @@ int parsePacket(struct request *req);
 int sessionValidity(struct request *req);
 
 /* processRequests.cpp */
-int processRequest(struct request req);
+int processRequest(struct request *req);
 void userLogin(struct request req);
 void userLogout(struct request req);
 void listAllUsers(struct request req);

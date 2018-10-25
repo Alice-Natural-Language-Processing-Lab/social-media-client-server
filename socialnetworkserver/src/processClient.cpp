@@ -5,6 +5,7 @@
  *      Author: pournami
  */
 #include "func_lib.h"
+#include "structures.h"
 
 using namespace std;
 
@@ -15,6 +16,7 @@ void handleClient(int sock_fd);
 void readRequest(int sock_fd, char *buffer, int req_len);
 int parsePacket(struct request *req);
 int sessionValidity(struct request *req);
+int permissionValidity(struct request *req);
 
 /*
  * client initial setup
@@ -40,7 +42,9 @@ void handleClient(int sock_fd)
 		req_len = sizeof(struct request);
 		/* Read client request */
 		readRequest(sock_fd, buffer, req_len);
-		DEBUG("Request received: %s", req->command);
+		if (!strcmp(req->command, ""))
+			break;
+		DEBUG("Request received: %s\n", req->command);
 		/* Parse the packet for valid packet structure */
 		ret = parsePacket(req);
 		if (ret < 0)
@@ -80,6 +84,9 @@ void handleClient(int sock_fd)
 
 		/* TODO : terminate client connection on appropriate request */
 	}
+	DEBUG("Client connection closed\n");
+	close(sock_fd);
+	return;
 
 }
 
@@ -110,7 +117,6 @@ void readRequest(int sock_fd, char *buffer, int req_len)
 		if (!sock_read || req_len <= 0)
 			break;
 	}
-	DEBUG("Request received\n");
 	return;
 }
 
@@ -121,6 +127,7 @@ void readRequest(int sock_fd, char *buffer, int req_len)
  */
 int parsePacket(struct request *req)
 {
+	DEBUG("Parsing Packet\n");
 	/* TODO : Complete the function */
 
 	return 0;
@@ -133,6 +140,7 @@ int parsePacket(struct request *req)
  */
 int sessionValidity(struct request *req)
 {
+	DEBUG("Checking session validity\n");
 	/* TODO : Complete the function */
 	return 0;
 }
@@ -144,6 +152,7 @@ int sessionValidity(struct request *req)
  */
 int permissionValidity(struct request *req)
 {
+	DEBUG("Checking permission for request\n");
 	/* TODO : Complete the function */
 	return 0;
 }
