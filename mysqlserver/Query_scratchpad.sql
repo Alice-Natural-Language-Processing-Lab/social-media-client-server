@@ -1,5 +1,5 @@
 CREATE TABLE `Users` (
-  `userID` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `userID` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
   `userName` varchar(25) NOT NULL,
   `passwordHash` varchar(45) NOT NULL,
   `salt` varchar(45) NOT NULL,
@@ -12,10 +12,10 @@ insert into social_network.Users (userID, userName, passwordHash, salt)
 values (1, 'frodo', 'idorhuckb039', 'xrdoeuch'), (2, 'sam', 'idrhoehu082h3', 'rcicoheur');
 
 CREATE TABLE `Notifications` (
-  `notificationID` int(10) unsigned NOT NULL,
-  `postID` int(10) unsigned NOT NULL,
-  `userID` int(10) unsigned NOT NULL,
-  `read` tinyint(1) unsigned NOT NULL,
+  `notificationID` smallint(5) unsigned NOT NULL,
+  `postID` smallint(5) unsigned NOT NULL,
+  `userID` smallint(5) unsigned NOT NULL,
+  `read` tinyint(3) unsigned NOT NULL,
   `timestamp` datetime NOT NULL,
   PRIMARY KEY (`notificationID`),
   UNIQUE KEY `notificationID_UNIQUE` (`notificationID`),
