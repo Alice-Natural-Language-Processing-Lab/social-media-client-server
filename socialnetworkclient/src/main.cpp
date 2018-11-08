@@ -1,9 +1,11 @@
 /*
- * main.cpp
+ * client.cpp
  *
- *  Created on: Nov 4, 2018
+ *  Created on: Oct 17, 2018
  *      Author: jagdeep
  */
+
+
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -31,13 +33,13 @@ enum commands {
     POST,
     SHOW,
     LIST
-}
+};
 
 struct packet {
     unsigned int content_len;
     enum commands cmd_code;
     unsigned int req_num;
-    unordered_map<string, string> contents;
+    unordered_map <string, string> contents;
 };
 
 int main(int argc, char *argv[])
@@ -96,7 +98,7 @@ int enterLoginMode(string servername, string serverport)
         else
         {
             cout<<"Invalid option. Try again!!"<<endl;
-        } 
+        }
     }
     return 0;
 }
@@ -115,7 +117,7 @@ int enterWebBrowserMode(string servername, string serverport)
         printf("Error (getaddrinfo): %s\n", gai_strerror(addr_info));
         return -1;
     }
-    
+
     /* create a client socket and connect the socket from the list of addrinfo*/
     for (rp = serv_info; rp != NULL; rp = rp->ai_next)
     {
@@ -135,30 +137,30 @@ int enterWebBrowserMode(string servername, string serverport)
     }
     freeaddrinfo(serv_info);
     DEBUG("Socket connected \n");
-    /*Getting username and password from stdin*/ 
+    /*Getting username and password from stdin*/
     getLoginInfo(username, pw);
-    
+
     /*Creating and sending packet*/
     sendPacket(sock_fd, LOGIN, username, pw);
-    
+
     /* create 2 threads to handle read and write */
     pthread_t th1, th2;
     pthread_attr_t ta;
     (void) pthread_attr_init(&ta);
     (void) pthread_attr_setdetachstate(&ta, PTHREAD_CREATE_DETACHED);
-    if (pthread_create(&th1, &ta, (void * (*)(void *))readThread,(void *)((long)sock_fd) < 0)
+    if (pthread_create(&th1, &ta, (void * (*)(void *))readThread,(void *)((long)sock_fd)) < 0)
     {
         perror("\nRead Thread create error");
         return -1;
     }
-    if (pthread_create(&th, &ta, (void * (*)(void *))writeThread,(void *)((long)sock_fd) < 0)
+    if (pthread_create(&th2, &ta, (void * (*)(void *))writeThread,(void *)((long)sock_fd)) < 0)
     {
         perror("\nWrite Thread create error");
         return -1;
     }
 }
 
-      
+
 void getLoginInfo(string &username, string &pw)
 {
     cout<<"Enter User Name:";
@@ -168,7 +170,7 @@ void getLoginInfo(string &username, string &pw)
     cout<<endl;
     return;
 }
-      
+
 void readThread(int sock_fd)
 {
     /*Print the list of commands*/
@@ -182,7 +184,7 @@ void readThread(int sock_fd)
         else if (cmd_entered == 1)
         {
             /*Call list users function*/
-            listUsers();
+            listUsers(sock_fd);
         }
         else if (cmd_entered == 2)
         {
@@ -201,8 +203,8 @@ void readThread(int sock_fd)
         }
     }
 }
-    
-void listUsers()
+
+void listUsers(int sock_fd)
 {
     sendPacket(sock_fd, LIST, "", "");
     return;
@@ -213,8 +215,8 @@ void post()
     int postwall;
     cout<<"1. Own wall\n";
     cout<<"2. Others wall\n";
-    cin>>postwall;    
-}            
+    cin>>postwall;
+}
 
 void printCmdList()
 {
@@ -226,29 +228,29 @@ void printCmdList()
     cout<<"Enter 0 to print the command list\n";
     return;
 }
-            
+
 void writeThread(int sock_fd)
 {
-    
+
 }
 
 int sendPacket(int sock_fd, enum commands cmd_code, string key, string value)
 {
     struct packet pkt;
     int send_bytes;
-    
-    pkt.command_code = cmd_code;
+
+    pkt.cmd_code = cmd_code;
     pkt.contents[key] = value;
     pkt.req_num = ++req_num;
     pkt.content_len = key.length() + value.length() + sizeof(enum commands) + sizeof(req_num);
-    
-    send_bytes = write(sock_fd, &pkt, sizeof(pkt)); 
+
+    send_bytes = write(sock_fd, &pkt, sizeof(pkt));
     if (send_bytes < 0)
     {
         perror("Write error\n");
         return -1;
     }
-    
+    return 0;
 }
 
 
