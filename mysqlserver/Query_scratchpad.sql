@@ -1,3 +1,5 @@
+CREATE DATABASE `SocialNetwork` /*!40100 DEFAULT CHARACTER SET latin1 */;
+
 CREATE TABLE `Users` (
   `userID` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
   `userName` varchar(25) NOT NULL,
@@ -51,28 +53,30 @@ CREATE TABLE `InteractionLog` (
   CONSTRAINT `fk_InteractionLog_1` FOREIGN KEY (`userID`) REFERENCES `Users` (`userID`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-insert into social_network.Users (userName, passwordHash, salt)
+insert into SocialNetwork.Users (userName, passwordHash, salt)
 values ('frodo', 'idorhuckb039', 'xrdoeuch'), ('sam', 'idrhoehu082h3', 'rcicoheur');
 
-insert into social_network.Posts (posterUserID, posteeUserID, timestamp, content)
+insert into SocialNetwork.Posts (posterUserID, posteeUserID, timestamp, content)
 values (1, 2, '2018-11-07', "Hello friends, how's it going?"), (2, 2, '2018-11-07', "Super political post");
 
-insert into social_network.Notifications (postID, userID, `read`, timestamp)
+insert into SocialNetwork.Notifications (postID, userID, `read`, timestamp)
 values (1, 1, 0, '2018-11-07 00:00:00'), (2,2,0,'2018-11-07');
 
-insert into social_network.InteractionLog (userID, sessionID, timestamp, userStatus, socketDescriptor, command)
+insert into SocialNetwork.InteractionLog (userID, sessionID, timestamp, userStatus, socketDescriptor, command)
 values (1, "id2k9h20dx9oeh", '2018-11-07', 1, 5, "show wall frodo");
 
 update Users set userID = 5 where userID = 1;
 
 delete from Users where userID = 1;
 
-select * from social_network.Users;
-select * from social_network.Posts;
-select * from social_network.Notifications;
-select * from social_network.InteractionLog;
+select * from SocialNetwork.Users;
+select * from SocialNetwork.Posts;
+select * from SocialNetwork.Notifications;
+select * from SocialNetwork.InteractionLog;
 
-DROP TABLE `social_network`.`InteractionLog`;
-DROP TABLE `social_network`.`Notifications`;
-DROP TABLE `social_network`.`Posts`;
-DROP TABLE `social_network`.`Users`;
+DROP TABLE `SocialNetwork`.`InteractionLog`;
+DROP TABLE `SocialNetwork`.`Notifications`;
+DROP TABLE `SocialNetwork`.`Posts`;
+DROP TABLE `SocialNetwork`.`Users`;
+
+DROP DATABASE `SocialNetwork`;
