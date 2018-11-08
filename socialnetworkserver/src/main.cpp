@@ -5,6 +5,8 @@
  *      Author: michael
  */
 
+#include <stdlib.h>
+#include <stdio.h>
 #include "mysql_lib.h"
 
 using namespace std;
