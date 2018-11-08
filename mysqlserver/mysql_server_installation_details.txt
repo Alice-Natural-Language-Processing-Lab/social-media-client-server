@@ -13,3 +13,6 @@ systemctl stop mysql
 MySQL Connector Installation
 
 apt-get install libmysqlcppconn-dev
+
+In Project > Properties > C/C++ Build > Settings > Tool Settings Tab > 
+GCC C+ Linker > Libraries > Add a Library -l: mysqlcppconn
