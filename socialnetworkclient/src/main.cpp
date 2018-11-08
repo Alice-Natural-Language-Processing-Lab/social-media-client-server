@@ -1,11 +1,10 @@
 /*
  * main.cpp
  *
- *  Created on: Oct 24, 2018
- *      Author: pournami
+ *  Created on: Nov 4, 2018
+ *      Author: jagdeep
  */
 
-#include "structures.h"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -16,23 +15,35 @@
 #include <errno.h>
 #include <stdio.h>
 #include <netdb.h>
-#include <string>
+#include <unordered_map>
 #include <iostream>
-
+#include <pthread.h>
 using namespace std;
 
-#define DEBUG printf
+#define DEBUG	printf
+int req_num;
 
-int sendRequest(int sock_fd, struct request *req);
-int getAddrInfo(string host, string port, struct addrinfo **serv_info);
-int processClient(string servername, string serverport);
-int tcpSocket(string host, string serverport);
-int getUserRequest(int sock_fd);
+int getAddrInfo(char *host, struct addrinfo **serv_info);
+
+enum commands {
+    LOGIN,
+    LOGOUT,
+    POST,
+    SHOW,
+    LIST
+}
+
+struct packet {
+    unsigned int content_len;
+    enum commands cmd_code;
+    unsigned int req_num;
+    unordered_map<string, string> contents;
+};
 
 int main(int argc, char *argv[])
 {
 	string servername = "localhost";
-	string serverport = "12345";
+	string serverport = "5354";
 	int ret = 0;
 
 	switch (argc)
@@ -50,7 +61,7 @@ int main(int argc, char *argv[])
 			printf("Error: Usage is ./[executable] [hostname] [port]\n");
 			return -1;
 	}
-	ret = processClient(servername, serverport);
+	ret = enterLoginMode(servername, serverport);
 	if (ret < 0)
 	{
 		printf("Error (processClient): Client processing failed\n");
@@ -60,139 +71,193 @@ int main(int argc, char *argv[])
 }
 
 /**
- * processClient - process the client for social network
- * servername: the server address
+ * enterLoginMode() - accept user request to exit or login
+ * servername: ip of endpoint
  * serverport: port number of server
- * returns 0(success) -1(error)
- */
-int processClient(string servername, string serverport)
+ * return 0 or -1
+ **/
+int enterLoginMode(string servername, string serverport)
 {
-	int sock_fd, sock_close;
-	int ret	= 0;
-
-	sock_fd = tcpSocket(servername, serverport);
-	if (sock_fd < 0)
-	{
-		printf("Error (tcpSocket): socket creation not successful\n");
-		return -1;
-	}
-	ret = getUserRequest(sock_fd);
-	if (ret < 0)
-	{
-		printf("Error (getUserRequest): user request not successful\n");
-		return -1;
-	}
-	sock_close = close(sock_fd);
-	if (sock_close < 0)
-	{
-		printf("Error (close): %s\n", strerror(errno));
-		return -1;
-	}
-	DEBUG("Socket closed \n");
-	return 0;
+    int option = 0;
+    while (1)
+    {
+   	    cout<<"Enter an Option (1 or 2)"<<endl;
+        cout<<"1. Login\n2. Exit"<<endl;
+        cin>>option;
+        if (option == 1)
+        {
+            enterWebBrowserMode(servername, serverport);
+        }
+        else if (option == 2)
+        {
+            cout<<"Gracefully exiting"<<endl;
+            break;
+        }
+        else
+        {
+            cout<<"Invalid option. Try again!!"<<endl;
+        } 
+    }
+    return 0;
 }
 
-/**
- * tcpSocket - to create a tcp client socket
- * host: server host address
- * serverport: port number of server
- * returns 0(success) -1(error)
- */
-int tcpSocket(string host, string serverport)
-{
-	int addr_info, sock_fd, sock_conv, sock_conn, sock_read, sock_write, sock_shut, sock_close, client_info;
-	struct addrinfo hints, *serv_info, *rp;
-	struct sockaddr_in sock_addr;
 
-	/* Get server info */
-	addr_info = getAddrInfo(host, serverport, &serv_info);
-	if (addr_info != 0)
-	{
-		printf("Error (getaddrinfo): %s\n", gai_strerror(addr_info));
-		return -1;
-	}
-	/* create a client socket and connect the socket from the list of addrinfo*/
-	for (rp = serv_info; rp != NULL; rp = rp->ai_next)
-	{
-		sock_fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-		if (sock_fd < 0)
-			continue;
-		DEBUG("Socket created\n");
-		sock_conn = connect(sock_fd, rp->ai_addr, rp->ai_addrlen);
-		if (sock_conn != -1)
-			break;
-		close(sock_fd);
-	}
-	if (rp == NULL)
-	{
-		printf("No address in the list was a success\n");
-		return -1;
-	}
-	freeaddrinfo(serv_info);
-	DEBUG("Socket connected \n");
-	return sock_fd;
+int enterWebBrowserMode(string servername, string serverport)
+{
+    int addr_info, sock_fd, sock_conn;
+    struct addrinfo *serv_info, *rp;
+    string username, pw;
+
+    /* Get server info */
+    addr_info = getAddrInfo(servername, serverport, &serv_info);
+    if (addr_info != 0)
+    {
+        printf("Error (getaddrinfo): %s\n", gai_strerror(addr_info));
+        return -1;
+    }
+    
+    /* create a client socket and connect the socket from the list of addrinfo*/
+    for (rp = serv_info; rp != NULL; rp = rp->ai_next)
+    {
+        sock_fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+        if (sock_fd < 0)
+            continue;
+        DEBUG("Socket created\n");
+        sock_conn = connect(sock_fd, rp->ai_addr, rp->ai_addrlen);
+        if (sock_conn != -1)
+            break;
+        close(sock_fd);
+    }
+    if (rp == NULL)
+    {
+        printf("No address in the list was a success\n");
+        return -1;
+    }
+    freeaddrinfo(serv_info);
+    DEBUG("Socket connected \n");
+    /*Getting username and password from stdin*/ 
+    getLoginInfo(username, pw);
+    
+    /*Creating and sending packet*/
+    sendPacket(sock_fd, LOGIN, username, pw);
+    
+    /* create 2 threads to handle read and write */
+    pthread_t th1, th2;
+    pthread_attr_t ta;
+    (void) pthread_attr_init(&ta);
+    (void) pthread_attr_setdetachstate(&ta, PTHREAD_CREATE_DETACHED);
+    if (pthread_create(&th1, &ta, (void * (*)(void *))readThread,(void *)((long)sock_fd) < 0)
+    {
+        perror("\nRead Thread create error");
+        return -1;
+    }
+    if (pthread_create(&th, &ta, (void * (*)(void *))writeThread,(void *)((long)sock_fd) < 0)
+    {
+        perror("\nWrite Thread create error");
+        return -1;
+    }
 }
 
-/**
- * getUserRequest - collect user request and send it to server
- * sock_fd: socket file descriptor
- * returns 0(success) -1(error)
- */
-int getUserRequest(int sock_fd)
+      
+void getLoginInfo(string &username, string &pw)
 {
-	char *user_input = (char *)malloc(sizeof(char) * CMD_LEN);
-	long unsigned int req_size;
-	char *ptr;
-	struct request *req = (struct request *)malloc(sizeof(struct request));
-	int ret;
-
-	while (1)
-	{
-		memset(req, 0, sizeof(struct request));
-		DEBUG("Enter command: ");
-		getline(&user_input, &req_size, stdin);
-		strcpy(req->command, strtok(user_input, "\n"));
-		ret = sendRequest(sock_fd, req);
-		if (ret < 0)
-		{
-			printf("Error (sendRequest): Request sending failed\n");
-			return -1;
-		}
-		if (!strcmp(req->command, "logout"))
-			break;
-	}
-	DEBUG("Logging out\n");
-	return 0;
+    cout<<"Enter User Name:";
+    cin>>username;
+    cout<<"\nEnter Password:";
+    cin>>pw;
+    cout<<endl;
+    return;
+}
+      
+void readThread(int sock_fd)
+{
+    /*Print the list of commands*/
+    int cmd_entered;
+    printCmdList();
+    while(1)
+    {
+        cin>> cmd_entered;
+        if (cmd_entered == 0)
+            printCmdList();
+        else if (cmd_entered == 1)
+        {
+            /*Call list users function*/
+            listUsers();
+        }
+        else if (cmd_entered == 2)
+        {
+            /*Call post function*/
+            post();
+        }
+        else if (cmd_entered == 3)
+        {
+        }
+        else if (cmd_entered == 4)
+        {
+        }
+        else
+        {
+            cout<<"Invalid Option. Try again !!!\n";
+        }
+    }
+}
+    
+void listUsers()
+{
+    sendPacket(sock_fd, LIST, "", "");
+    return;
 }
 
-/**
- * sendRequest - send the request to server
- * sock_fd: socket file descriptor
- * req: request structure to store request
- * returns 0(success) -1(error)
- */
-int sendRequest(int sock_fd, struct request *req)
+void post()
 {
-	int sock_send, sock_read, sock_shut;
-	int req_len = sizeof(struct request);
+    int postwall;
+    cout<<"1. Own wall\n";
+    cout<<"2. Others wall\n";
+    cin>>postwall;    
+}            
 
-	/* Send the request to server */
-	sock_send = send(sock_fd, req, req_len, 0);
-	if (sock_send < 0)
-	{
-		printf("Error (send):%s\n", strerror(errno));
-		return -1;
-	}
-	DEBUG("Request sent\n");
-	return 0;
+void printCmdList()
+{
+    cout<<"Commands (Enter 0- 3\n"<<"--------------\n";
+    cout<<"1. List all users\n";
+    cout<<"2. Post to wall\n";
+    cout<<"3. Show wall\n";
+    cout<<"4. Logout\n";
+    cout<<"Enter 0 to print the command list\n";
+    return;
+}
+            
+void writeThread(int sock_fd)
+{
+    
 }
 
+int sendPacket(int sock_fd, enum commands cmd_code, string key, string value)
+{
+    struct packet pkt;
+    int send_bytes;
+    
+    pkt.command_code = cmd_code;
+    pkt.contents[key] = value;
+    pkt.req_num = ++req_num;
+    pkt.content_len = key.length() + value.length() + sizeof(enum commands) + sizeof(req_num);
+    
+    send_bytes = write(sock_fd, &pkt, sizeof(pkt)); 
+    if (send_bytes < 0)
+    {
+        perror("Write error\n");
+        return -1;
+    }
+    
+}
+
+
 /**
- * getAddrInfo - get end point information
- * host: host address of server
- * port: port number of server
- * serv_info: to store the server information
- * returns addr_info
+ * getAddrInfo() - get addr info of server
+ * host: server host information
+ * port: server port
+ * serv_info: to store server information
+ * return addinfo status
  */
 int getAddrInfo(string host, string port, struct addrinfo **serv_info)
 {
