@@ -25,7 +25,6 @@ using namespace std;
 #define DEBUG	printf
 int req_num;
 
-int getAddrInfo(char *host, struct addrinfo **serv_info);
 
 enum commands {
     LOGIN,
@@ -41,6 +40,17 @@ struct packet {
     unsigned int req_num;
     unordered_map <string, string> contents;
 };
+
+int getAddrInfo(string host, string port, struct addrinfo **serv_info);
+int enterLoginMode(string servername, string serverport);
+int enterWebBrowserMode(string servername, string serverport);
+void getLoginInfo(string &username, string &pw);
+void readThread(int sock_fd);
+void listUsers(int sock_fd);
+void post();
+void printCmdList();
+void writeThread(int sock_fd);
+int sendPacket(int sock_fd, enum commands cmd_code, string key, string value);
 
 int main(int argc, char *argv[])
 {
@@ -158,6 +168,7 @@ int enterWebBrowserMode(string servername, string serverport)
         perror("\nWrite Thread create error");
         return -1;
     }
+    return 0;
 }
 
 
