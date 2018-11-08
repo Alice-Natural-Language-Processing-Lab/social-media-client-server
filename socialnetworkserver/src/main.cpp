@@ -14,9 +14,8 @@ using namespace std;
 
 int main() {
 
-	int x = 5;
-
-	fprintf(stdout, "%i\n", x);
+	//test();
+	cout << "Hi\n";
 
 	exit(EXIT_SUCCESS);
 }

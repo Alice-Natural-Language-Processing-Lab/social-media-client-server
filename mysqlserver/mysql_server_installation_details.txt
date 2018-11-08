@@ -10,6 +10,6 @@ sudo ufw allow mysql #allows external machines to connect to database
 systemctl start mysql
 systemctl stop mysql
 
-/usr/bin/mysql -u root -p #start shell and login as root user
+MySQL Connector Installation
 
-SELECT User, Host, authentication_string FROM mysql.user; #view users
+apt-get install libmysqlcppconn-dev
