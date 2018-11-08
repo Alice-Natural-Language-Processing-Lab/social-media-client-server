@@ -9,13 +9,18 @@
 #include <stdio.h>
 #include <cstdlib>
 #include "mysql_lib.h"
+#include <string>
 
 using namespace std;
 
 int main() {
 
-	//test();
-	cout << "Hi\n";
+	string query;
+
+	while (true) {
+		getline(cin, query);
+		test(query);
+	}
 
 	exit(EXIT_SUCCESS);
 }
