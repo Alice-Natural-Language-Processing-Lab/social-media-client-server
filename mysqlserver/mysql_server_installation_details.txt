@@ -1,6 +1,6 @@
 MySQL Installation
 
-MySQL root pswd: ^AVdoDz%9WLEbHKQG7Ed
+MySQL root pswd: socialnetworkpswd
 
 sudo apt-get update
 sudo apt-get install mysql-server, mysql-workbench

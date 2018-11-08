@@ -19,7 +19,7 @@ int main() {
 
 	while (true) {
 		getline(cin, query);
-		test(query);
+		test_query(query);
 	}
 
 	exit(EXIT_SUCCESS);

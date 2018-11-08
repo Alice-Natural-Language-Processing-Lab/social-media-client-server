@@ -18,8 +18,19 @@
 #include <cppconn/statement.h>
 #include <string>
 
-void test(std::string query) {
-
+void test_query(std::string query) {
+/*
+ * Argument is a SQL query
+ * Function prints query results to stdout and then returns
+ *
+ * Example:
+ *  string query;
+ *
+ *	while (true) {
+ *		getline(cin, query);
+ *		test(query);
+ *	}
+ */
 	try {
 		sql::Driver *driver;
 		sql::Connection *con;
@@ -31,7 +42,7 @@ void test(std::string query) {
 		// Create a connection
 		driver = get_driver_instance();
 		con = driver->connect("tcp://127.0.0.1:3306", "root",
-				"^AVdoDz%9WLEbHKQG7Ed");
+				"socialnetworkpswd");
 		con->setSchema("SocialNetwork");
 
 		stmt = con->createStatement();
