@@ -55,7 +55,8 @@ void test_query(std::string query) {
 			for (unsigned int i = 1; i <= column_count; i++) {
 				if (res->isFirst())
 					std::cout << "\t" << result_set_meta_data->getColumnName(i);
-				std::cout << "\t" << res->getString(i);
+				else
+					std::cout << "\t" << res->getString(i);
 			}
 			std::cout << std::endl;
 		}
