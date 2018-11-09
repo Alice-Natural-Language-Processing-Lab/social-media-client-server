@@ -4,10 +4,14 @@
  *  Created on: Oct 17, 2018
  *      Author: pournami
  */
+
+#include <stdlib.h>
 #include <stdio.h>
+#include <cstdlib>
 #include <string>
-#include <iostream>
+
 #include "func_lib.h"
+#include "mysql_lib.h"
 
 using namespace std;
 

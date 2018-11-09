@@ -1,6 +1,6 @@
 MySQL Installation
 
-MySQL root pswd: ^AVdoDz%9WLEbHKQG7Ed
+MySQL root pswd: socialnetworkpswd
 
 sudo apt-get update
 sudo apt-get install mysql-server, mysql-workbench
@@ -10,6 +10,9 @@ sudo ufw allow mysql #allows external machines to connect to database
 systemctl start mysql
 systemctl stop mysql
 
-/usr/bin/mysql -u root -p #start shell and login as root user
+MySQL Connector Installation
 
-SELECT User, Host, authentication_string FROM mysql.user; #view users
+apt-get install libmysqlcppconn-dev
+
+In Project > Properties > C/C++ Build > Settings > Tool Settings Tab > 
+GCC C+ Linker > Libraries > Add a Library -l: mysqlcppconn
