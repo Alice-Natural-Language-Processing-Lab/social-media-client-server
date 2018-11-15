@@ -16,10 +16,13 @@ using namespace std;
 int main() {
 
 	string query;
+	MySQLDatabase database;
 
 	while (true) {
 		getline(cin, query);
-		test_query(query);
+		//test_query(query);
+		database.query = query;
+		database.getResults();
 	}
 
 	exit(EXIT_SUCCESS);
