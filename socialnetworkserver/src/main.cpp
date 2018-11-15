@@ -15,15 +15,16 @@ using namespace std;
 
 int main() {
 
-	string query;
+	string query, user_name;
 	MySQLDatabase database;
+	Credential credential;
 
-	while (true) {
-		getline(cin, query);
-		//test_query(query);
-		database.query = query;
-		database.getResults();
-	}
+	getline(cin, query);
+	database.getResults(query);
+	getline(cin, user_name);
+	credential = database.getCredential(user_name);
+	cout << credential.userName << " | " << credential.passwordHash << " | "
+			<< credential.salt << endl;
 
 	exit(EXIT_SUCCESS);
 }
