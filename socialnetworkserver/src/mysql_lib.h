@@ -20,19 +20,19 @@
 #include <cppconn/prepared_statement.h>
 
 /*
-enum function_returns {
-	SUCCESS = 0, INVALID_SESSION_ID = -1, INVALID_CREDENTIALS = -2
-};
-*/
+ enum function_returns {
+ SUCCESS = 0, INVALID_SESSION_ID = -1, INVALID_CREDENTIALS = -2
+ };
+ */
 /*
-class Credential {
+ class Credential {
 
-public:
-	std::string userName;
-	std::string passwordHash;
-	std::string salt;
-};
-*/
+ public:
+ std::string userName;
+ std::string passwordHash;
+ std::string salt;
+ };
+ */
 
 class MySQLDatabase {
 
@@ -63,28 +63,30 @@ public:
 	int login(std::string user_name, std::string password,
 			std::string &session_id);
 	int listUsers(std::string session_id, std::string &user_list); //numbered list with newlines between | for errors set error number and pass error string
-	int showWall(std::string session_id, std::string user_name, std::string &wall_contents); //multiples of timestamp\n user posted on users wall\n contents \n\n | | for errors set error number and pass error string
-	int postOnWall(std::string session_id, std::string user_name, std::string post_contents, std::string &error_message);
+	int showWall(std::string session_id, std::string user_name,
+			std::string &wall_contents); //multiples of timestamp\n user posted on users wall\n contents \n\n | | for errors set error number and pass error string
+	int postOnWall(std::string session_id, std::string user_name,
+			std::string post_contents, std::string &error_message);
 };
 
 /*
-global data structure - see structures.h for global structure
+ global data structure - see structures.h for global structure
 
-Weiyang:
-int	create_socket(bool server, ???); //return is positive for success, negative or 0 for failure
-int	write(struct packet &pkt); //return is 0 for failed acknowledgement, 1 for acknowledged packet, -1 for failure
-int	read(struct packet &pkt); //return is 0 for unsuccessful read or unsuccessful send of ack, 1 for successful read and send of ack, negative for failure
-int destroy_socket(???); //return is positive for success, negative or 0 for failure
+ Weiyang:
+ int	create_socket(bool server, ???); //return is positive for success, negative or 0 for failure
+ int	write(struct packet &pkt); //return is 0 for failed acknowledgement, 1 for acknowledged packet, -1 for failure
+ int	read(struct packet &pkt); //return is 0 for unsuccessful read or unsuccessful send of ack, 1 for successful read and send of ack, negative for failure
+ int destroy_socket(???); //return is positive for success, negative or 0 for failure
 
-Michael:
-int logout
-int getNotification
-int updateNotification
-int getSocketDescriptor(session_id)
-int login(std::string user_name, std::string password, std::string &session_id);
-int listUsers(std::string session_id, std::string &user_list);
-int showWall(std::string session_id, std::string user_name, std::string &wall_contents);
-int postOnWall(std::string session_id, std::string user_name, std::string post_contents, std::string &error_message);
+ Michael:
+ int logout
+ int getNotification
+ int updateNotification
+ int getSocketDescriptor(session_id)
+ int login(std::string user_name, std::string password, std::string &session_id);
+ int listUsers(std::string session_id, std::string &user_list);
+ int showWall(std::string session_id, std::string user_name, std::string &wall_contents);
+ int postOnWall(std::string session_id, std::string user_name, std::string post_contents, std::string &error_message);
  */
 
 MySQLDatabase::MySQLDatabase() {
@@ -141,33 +143,33 @@ void MySQLDatabase::getResults(std::string query) {
 }
 
 /*
-Credential MySQLDatabase::getCredential(std::string user) {
+ Credential MySQLDatabase::getCredential(std::string user) {
 
-	Credential cred;
+ Credential cred;
 
-	try {
-		pstmt =
-				con->prepareStatement(
-						"select userName, passwordHash, salt from Users where userName = ?");
-		pstmt->setString(1, user);
-		res = pstmt->executeQuery();
-		res->next();
-		cred.userName = res->getString("userName");
-		cred.passwordHash = res->getString("passwordHash");
-		cred.salt = res->getString("salt");
+ try {
+ pstmt =
+ con->prepareStatement(
+ "select userName, passwordHash, salt from Users where userName = ?");
+ pstmt->setString(1, user);
+ res = pstmt->executeQuery();
+ res->next();
+ cred.userName = res->getString("userName");
+ cred.passwordHash = res->getString("passwordHash");
+ cred.salt = res->getString("salt");
 
-		delete pstmt;
-		delete res;
-	} catch (sql::SQLException &e) {
-		std::cout << "# ERR: SQLException in " << __FILE__;
-		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
-				<< std::endl;
-		std::cout << "# ERR: " << e.what();
-		std::cout << " (MySQL error code: " << e.getErrorCode();
-		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
-	}
-	return cred;
-}
-*/
+ delete pstmt;
+ delete res;
+ } catch (sql::SQLException &e) {
+ std::cout << "# ERR: SQLException in " << __FILE__;
+ std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+ << std::endl;
+ std::cout << "# ERR: " << e.what();
+ std::cout << " (MySQL error code: " << e.getErrorCode();
+ std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+ }
+ return cred;
+ }
+ */
 
 #endif /* MYSQL_LIB_H_ */
