@@ -19,6 +19,12 @@
 #include <cppconn/statement.h>
 #include <cppconn/prepared_statement.h>
 
+/*
+enum function_returns {
+	SUCCESS = 0, INVALID_SESSION_ID = -1, INVALID_CREDENTIALS = -2
+};
+*/
+/*
 class Credential {
 
 public:
@@ -26,6 +32,7 @@ public:
 	std::string passwordHash;
 	std::string salt;
 };
+*/
 
 class MySQLDatabase {
 
@@ -42,13 +49,47 @@ public:
 	MySQLDatabase();
 	~MySQLDatabase();
 	void getResults(std::string query);
-	Credential getCredential(std::string user);
+	/*
+	 * Input query is a valid SQL statement that returns rows
+	 * Output is SQL results printed to standard out
+	 * Used for testing
+	 */
+	//Credential getCredential(std::string user);
+	/*
+	 * Input is username
+	 * Output is Credential information stored in Credential class
+	 * Used for testing
+	 */
+	int login(std::string user_name, std::string password,
+			std::string &session_id);
+	int listUsers(std::string session_id, std::string &user_list); //numbered list with newlines between | for errors set error number and pass error string
+	int showWall(std::string session_id, std::string user_name, std::string &wall_contents); //multiples of timestamp\n user posted on users wall\n contents \n\n | | for errors set error number and pass error string
+	int postOnWall(std::string session_id, std::string user_name, std::string post_contents, std::string &error_message);
 };
+
+/*
+global data structure - see structures.h for global structure
+
+Weiyang:
+int	create_socket(bool server, ???); //return is positive for success, negative or 0 for failure
+int	write(struct packet &pkt); //return is 0 for failed acknowledgement, 1 for acknowledged packet, -1 for failure
+int	read(struct packet &pkt); //return is 0 for unsuccessful read or unsuccessful send of ack, 1 for successful read and send of ack, negative for failure
+int destroy_socket(???); //return is positive for success, negative or 0 for failure
+
+Michael:
+int logout
+int getNotification
+int updateNotification
+int getSocketDescriptor(session_id)
+int login(std::string user_name, std::string password, std::string &session_id);
+int listUsers(std::string session_id, std::string &user_list);
+int showWall(std::string session_id, std::string user_name, std::string &wall_contents);
+int postOnWall(std::string session_id, std::string user_name, std::string post_contents, std::string &error_message);
+ */
 
 MySQLDatabase::MySQLDatabase() {
 
 	try {
-		// Create a connection
 		driver = get_driver_instance();
 		con = driver->connect("tcp://127.0.0.1:3306", "root",
 				"socialnetworkpswd");
@@ -99,8 +140,7 @@ void MySQLDatabase::getResults(std::string query) {
 	}
 }
 
-//void MySQLDatabase::listUsers(string *user_list, int *list_size)
-
+/*
 Credential MySQLDatabase::getCredential(std::string user) {
 
 	Credential cred;
@@ -128,5 +168,6 @@ Credential MySQLDatabase::getCredential(std::string user) {
 	}
 	return cred;
 }
+*/
 
 #endif /* MYSQL_LIB_H_ */

@@ -13,11 +13,20 @@
 
 using namespace std;
 
+void test(int &a){
+	cout << a;
+	a = 5;
+}
+
 int main() {
 
 	string query, user_name;
 	MySQLDatabase database;
 	Credential credential;
+
+	int a = 3;
+	test(a);
+	cout << a;
 
 	getline(cin, query);
 	database.getResults(query);
@@ -28,3 +37,4 @@ int main() {
 
 	exit(EXIT_SUCCESS);
 }
+
