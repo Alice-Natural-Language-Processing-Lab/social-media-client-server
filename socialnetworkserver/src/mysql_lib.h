@@ -19,12 +19,13 @@
 #include <cppconn/statement.h>
 #include <cppconn/prepared_statement.h>
 
+#include "structures.h"
+
 /*
  enum function_returns {
  SUCCESS = 0, INVALID_SESSION_ID = -1, INVALID_CREDENTIALS = -2
  };
- */
-/*
+
  class Credential {
 
  public:
@@ -33,6 +34,9 @@
  std::string salt;
  };
  */
+
+class MySQLDatabase;
+class Notification;
 
 class MySQLDatabase {
 
@@ -60,34 +64,28 @@ public:
 	 * Output is Credential information stored in Credential class
 	 * Used for testing
 	 */
-	int login(std::string user_name, std::string password,
-			std::string &session_id);
-	int listUsers(std::string session_id, std::string &user_list); //numbered list with newlines between | for errors set error number and pass error string
-	int showWall(std::string session_id, std::string user_name,
-			std::string &wall_contents); //multiples of timestamp\n user posted on users wall\n contents \n\n | | for errors set error number and pass error string
-	int postOnWall(std::string session_id, std::string user_name,
-			std::string post_contents, std::string &error_message);
+
+	/*
+	 * the following functions take the request packet input, perform SQL queries and then overwrite the request
+	 * packet with the corresponding response packet. They return EXIT_SUCCESS if successful and
+	 * EXIT_FAILURE if unsuccessful. If unsuccessful, rvcd_cnts will also contain an error message.
+	 */
+	int login(struct packet &pkt);
+	int listUsers(struct packet &pkt);
+	int showWall(struct packet &pkt);
+	int postOnWall(struct packet &pkt);
+	int logout(struct packet &pkt);
+
+	/*
+	 * The following functions are called in the notifications thread.
+	 */
+	//Notification object not created yet. Still to be done. But function names won't change.
+	Notification getNotifications(void); //returns a Notification object to iterate through
+	bool next(void); //iterates the Notification object to the next entry. Returns true if the entry exists.
+	int sendNotification(struct packet &pkt); //generates the notification packet and returns the socket descriptor to send it to. Returns -1 if fails
+	int markRead(void); //marks the current notification as read (acknowledged by client code). Returns EXIT_SUCCESS if successful
+
 };
-
-/*
- global data structure - see structures.h for global structure
-
- Weiyang:
- int	create_socket(bool server, ???); //return is positive for success, negative or 0 for failure
- int	write(struct packet &pkt); //return is 0 for failed acknowledgement, 1 for acknowledged packet, -1 for failure
- int	read(struct packet &pkt); //return is 0 for unsuccessful read or unsuccessful send of ack, 1 for successful read and send of ack, negative for failure
- int destroy_socket(???); //return is positive for success, negative or 0 for failure
-
- Michael:
- int logout
- int getNotification
- int updateNotification
- int getSocketDescriptor(session_id)
- int login(std::string user_name, std::string password, std::string &session_id);
- int listUsers(std::string session_id, std::string &user_list);
- int showWall(std::string session_id, std::string user_name, std::string &wall_contents);
- int postOnWall(std::string session_id, std::string user_name, std::string post_contents, std::string &error_message);
- */
 
 MySQLDatabase::MySQLDatabase() {
 
@@ -171,5 +169,38 @@ void MySQLDatabase::getResults(std::string query) {
  return cred;
  }
  */
+
+int MySQLDatabase::login(struct packet &pkt) {
+
+	pkt.contents.username;
+	pkt.contents.password;
+	pkt.sessionId;
+	pkt.contents.rvcd_cnts; //for error return
+
+	return EXIT_SUCCESS;
+}
+
+int MySQLDatabase::listUsers(struct packet &pkt) {
+
+	pkt.sessionId;
+	pkt.contents.username;
+	pkt.contents.rvcd_cnts; //numbered list with newlines between | for errors set error number and pass error string
+
+	return EXIT_SUCCESS;
+}
+
+int MySQLDatabase::showWall(struct packet &pkt) {
+
+	pkt.sessionId;
+	pkt.contents.wallOwner;
+	pkt.contents.rvcd_cnts; //multiples of timestamp\n user posted on users wall\n contents \n\n | | for errors set error number and pass error string
+
+	return EXIT_SUCCESS;
+}
+
+int MySQLDatabase::postOnWall(struct packet &pkt) {
+
+	return EXIT_SUCCESS;
+}
 
 #endif /* MYSQL_LIB_H_ */

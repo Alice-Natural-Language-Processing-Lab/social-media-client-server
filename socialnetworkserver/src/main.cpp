@@ -21,7 +21,7 @@ int main() {
 
 	getline(cin, query);
 	database.getResults(query);
-	getline(cin, user_name);
+	//getline(cin, user_name);
 	//credential = database.getCredential(user_name);
 	//cout << credential.userName << " | " << credential.passwordHash << " | " << credential.salt << endl;
 
