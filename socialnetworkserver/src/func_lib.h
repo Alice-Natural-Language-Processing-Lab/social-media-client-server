@@ -31,6 +31,8 @@
 using namespace std;
 /* Function Declarations */
 
+static const char * commandList[] = { "LOGIN", "LOGOUT", "POST", "SHOW", "LIST", "NOTIFY", "ACK" };
+
 /* server.cpp */
 int serverInit(string port);
 int acceptConnections(int master_fd);
@@ -39,14 +41,17 @@ void terminateClient(int slave_fd);
 /* processClient.cpp */
 void handleClient(int sock_fd);
 void readRequest(int sock_fd, char *buffer, int req_len);
-int parsePacket(struct request *req);
-int sessionValidity(struct request *req);
+int parsePacket(struct packet *req);
+int sessionValidity(struct packet *req);
 
 /* processRequests.cpp */
-int processRequest(struct request *req);
-void userLogin(struct request req);
-void userLogout(struct request req);
-void listAllUsers(struct request req);
-void postMessage(struct request req);
+int processRequest(int sock_fd, struct packet *req);
+void userLogin(int sock_fd, struct packet *req);
+void userLogout(int sock_fd, struct packet *req);
+void listAllUsers(int sock_fd, struct packet *req);
+void postMessage(int sock_fd, struct packet *req);
+void showWallMessage(int sock_fd, struct packet *req);
+int sendPacket(int sock_fd, struct packet *req, string value1);
+int sendPacket(int sock_fd, struct packet *req, unsigned int value1);
 
 #endif /* FUNC_LIB_H_ */
