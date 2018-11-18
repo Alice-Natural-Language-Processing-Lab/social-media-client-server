@@ -1,8 +1,8 @@
 /*
  * structures.h
  *
- *  Created on: Oct 24, 2018
- *      Author: pournami
+ *  Created on: Oct 17, 2018
+ *      Author: jagdeep
  */
 
 #ifndef STRUCTURES_H_
