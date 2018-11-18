@@ -43,7 +43,7 @@ int create_socket(bool server) {
 int accept_socket(int socketfd) {
 	struct sockaddr_in clientAddr;
 	int clientSize = sizeof(clientAddr);
-	slaveSocket = accept(socketfd, (struct sockaddr *)&clientAddr, (socklen_t*)&clientSize);
+	slaveSocket = accept(socketfd, (struct sockaddr *)&clientAddr, &clientSize);
 	if(slaveSocket < 0) {
 		fprintf(stderr, "Failed to Accept Socket; Error Message: %s\n", gai_strerror(errno));
 		return -1;
@@ -64,18 +64,18 @@ int write(int socketfd, struct packet &pkt) {
 }
 
 int read(int socketfd, struct packet &pkt) {
-		int received = 0;
-	    int bytes = 0;
-	    do {
-	    	bytes = read(clientSocket, request+received, total-received);
-	    	if(bytes < 0) {
-	    		printf("Error when reading.");
-	    		return -5;
-	    	}
-	    	if(bytes == 0) {
-	    		break;
-	    	}
-	    	received += bytes;
-	    } while(received < total);
-	    
+	/*int received = 0;
+    int bytes = 0;
+    do {
+    	bytes = read(socketfd, request+received, total-received);
+    	if(bytes < 0) {
+    		printf("Error when reading.");
+    		return -5;
+    	}
+    	if(bytes == 0) {
+    		break;
+    	}
+    	received += bytes;
+    } while(received < total);
+    */
 }
