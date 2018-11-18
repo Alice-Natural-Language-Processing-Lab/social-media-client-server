@@ -22,7 +22,9 @@ enum commands {
     LOGOUT,
     POST,
     SHOW,
-    LIST
+    LIST,
+	NOTIFY,
+	ACK
 };
 
 struct content {
