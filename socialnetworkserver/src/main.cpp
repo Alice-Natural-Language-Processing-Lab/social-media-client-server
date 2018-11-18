@@ -11,20 +11,24 @@
 #include "mysql_lib.h"
 #include <string>
 
+#define SERVER_URL "tcp://127.0.0.1:3306"
+#define SERVER_USERNAME "root"
+#define SERVER_PASSWORD "socialnetworkpswd"
+#define SERVER_DATABASE "SocialNetwork"
+
 using namespace std;
 
 int main() {
 
 	string query, user_name;
-	MySQLDatabase database;
-	//Credential credential;
+	MySQLDatabaseDriver databaseDriver;
+	MySQLDatabaseInterface database(databaseDriver, SERVER_URL, SERVER_USERNAME,
+	SERVER_PASSWORD, SERVER_DATABASE);
 
-	getline(cin, query);
-	database.getResults(query);
-	//getline(cin, user_name);
-	//credential = database.getCredential(user_name);
-	//cout << credential.userName << " | " << credential.passwordHash << " | " << credential.salt << endl;
+	while (true) {
+		getline(cin, query);
+		database.getResults(query);
+	}
 
 	exit(EXIT_SUCCESS);
 }
-
