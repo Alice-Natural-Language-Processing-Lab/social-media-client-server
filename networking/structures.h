@@ -18,13 +18,16 @@ using namespace std;
 #define MAX_CONT_LEN 100
 
 enum commands {
-    LOGIN,
-    LOGOUT,
-    POST,
-    SHOW,
-    LIST
+	LOGIN,
+	LOGOUT,
+	POST,
+	SHOW,
+	LIST,
+	NOTIFY,
+	ACK
 };
 
+/*
 struct content {
 	char username[USR_NAME_LEN];
 	char password[PW_LEN];
@@ -32,8 +35,8 @@ struct content {
 	char post[POST_LEN];
 	char wallOwner[OWNER_LEN];
 	char rvcd_cnts[MAX_CONT_LEN];
-};
-/*
+};*/
+
 struct content {
 	string username;
 	string password;
@@ -42,7 +45,7 @@ struct content {
 	string wallOwner;
 	string rvcd_cnts;
 };
-*/
+
 /**
  * request - structure to store the request message
  * command: to store the command portion of the request
