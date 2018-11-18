@@ -1,10 +1,9 @@
 /*
  * readProcess.cpp
  *
- *  Created on: Nov 14, 2018
- *      Author: pournami
+ *  Created on: Nov 18, 2018
+ *      Author: jagdeep
  */
-
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -20,6 +19,7 @@
 #include <pthread.h>
 #include "structures.h"
 #include "func_lib.h"
+
 extern string username;
 extern const char * getCommand(int enumVal);
 extern FILE *logfile;
@@ -46,6 +46,10 @@ void createShowPacket(string wallOwner, struct packet &pkt);
 int logoutSignal;
 int req_num;
 
+/*
+ * readThread()-Takes input from stdin
+ * sock_fd: socket file descriptor
+ */
 void readThread(int sock_fd)
 {
     /*Print the list of commands*/
@@ -59,20 +63,22 @@ void readThread(int sock_fd)
             printCmdList();
         else if (cmd_entered == 1)
         {
-            /*Call list users function*/
+            /*If command is list: Call list users function*/
             listUsers(sock_fd);
         }
         else if (cmd_entered == 2)
         {
-            /*Call post function*/
+            /*If command is post: Call post function*/
             post(sock_fd);
         }
         else if (cmd_entered == 3)
         {
+        	/*If command is to show the wall*/
         	show(sock_fd);
         }
         else if (cmd_entered == 4)
         {
+        	/*If command is logout */
         	logout(sock_fd);
         	close(sock_fd);
         	exit(0);
@@ -85,12 +91,20 @@ void readThread(int sock_fd)
     pthread_exit(NULL);
 }
 
+/*
+ * listUsers()-Send the command name "LIST" to the server side to get the list of all the users
+ * sock_fd: socket file descriptor
+ * */
 void listUsers(int sock_fd)
 {
     sendPacket(sock_fd, LIST, "", "");
     return;
 }
 
+/*
+ * post()-Send the command name "POST", postee name and the post contents to the server
+ * sock_fd: socket file descriptor
+ * */
 void post(int sock_fd)
 {
     int postWall;
@@ -121,6 +135,10 @@ void post(int sock_fd)
     return;
 }
 
+/*
+ * show()-Send the command "SHOW" and the name whose wall has to be shown to the server
+ * sock_fd: socket file descriptor
+ * */
 void show(int sock_fd)
 {
     int showWall;
@@ -147,11 +165,18 @@ void show(int sock_fd)
     return;
 }
 
+/*
+ * logout()-Send the command "logout" to the server
+ * sock_fd: socket file descriptor
+ * */
 void logout(int sock_fd)
 {
 	sendPacket(sock_fd, LOGOUT, "", "");
 }
 
+/*
+ * printCndList()-Print the list of available commands
+ * */
 void printCmdList()
 {
     cout<<"Commands (Enter 0- 3)\n"<<"--------------\n";
@@ -163,7 +188,14 @@ void printCmdList()
     return;
 }
 
-
+/*
+ * sendPacket()-Send the packet to the server side
+ * sock_fd: socket file descriptor
+ * cmd_code: the command name
+ * value1: Username(for login command), Postee(for post command), Wallowner(for show command) and NULL(for rest of the commands)
+ * value2: Password(for login command), Post(for post command) and NULL(for rest of the commands)
+ * return 0(Success) or -1(Failure)
+ * */
 int sendPacket(int sock_fd, enum commands cmd_code, string value1, string value2)
 {
     struct packet req;
@@ -208,6 +240,12 @@ int sendPacket(int sock_fd, enum commands cmd_code, string value1, string value2
     return 0;
 }
 
+/*
+ * createLOginPacket()-Creates login packet
+ * username: Username
+ * pw: Password
+ * pkt: request structure
+ * */
 void createLoginPacket(string username, string pw, struct packet &pkt)
 {
 	strcpy(pkt.contents.username, (const char *)username.c_str());
@@ -217,6 +255,12 @@ void createLoginPacket(string username, string pw, struct packet &pkt)
 
 }
 
+/*
+ * createPostPacket()-Create packet for post command
+ * postee: postee name
+ * post: content that is supposed to be posted
+ * pkt: request structure
+ * */
 void createPostPacket(string postee, string post, struct packet &pkt)
 {
 	strcpy(pkt.contents.postee, (const char *)postee.c_str());
@@ -225,6 +269,11 @@ void createPostPacket(string postee, string post, struct packet &pkt)
 	//pkt.contents.post = post;
 }
 
+/*
+ * createShowPacket()-Create packet for show command
+ * wallOwner: The wall owner whose wall client is asking for
+ * pkt: request structure
+ * */
 void createShowPacket(string wallOwner, struct packet &pkt)
 {
 	strcpy(pkt.contents.wallOwner, (const char *)wallOwner.c_str());
