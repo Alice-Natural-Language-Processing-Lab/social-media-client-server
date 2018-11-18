@@ -1,3 +1,10 @@
+/*
+ * client.cpp
+ *
+ *  Created on: Oct 17, 2018
+ *      Author: jagdeep
+ */
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -95,12 +102,17 @@ int enterLoginMode(string servername, string serverport)
         else
         {
             cout<<"Invalid option. Try again!!"<<endl;
-        } 
+        }
     }
     return 0;
 }
 
-
+/*
+ * enterWebBrowserMode()-Creates the socket, connect with the server and start communication
+ * servername: ip of endpoint
+ * serverport: port number of server
+ * return 0 or -1
+ *  */
 int enterWebBrowserMode(string servername, string serverport)
 {
     int addr_info, sock_fd, sock_conn;
@@ -120,7 +132,7 @@ int enterWebBrowserMode(string servername, string serverport)
         fprintf(logfile, "%s: Error (getaddrinfo): %s\n", strtok(ctime(&now), "\n"), gai_strerror(addr_info));
         return -1;
     }
-    
+
     /* create a client socket and connect the socket from the list of addrinfo*/
     for (rp = serv_info; rp != NULL; rp = rp->ai_next)
     {
@@ -140,11 +152,12 @@ int enterWebBrowserMode(string servername, string serverport)
     }
     freeaddrinfo(serv_info);
     DEBUG("Socket connected \n");
-    /*Getting username and password from stdin*/ 
+
+    /*Getting username and password from stdin*/
     getLoginInfo(pw);
-    
     /*Creating and sending packet*/
     sendPacket(sock_fd, LOGIN, username, pw);
+
     /* create 2 threads to handle read and write */
     pthread_t th1, th2;
     pthread_attr_t ta;
@@ -170,7 +183,11 @@ int enterWebBrowserMode(string servername, string serverport)
     while (1) {}
     return 0;
 }
-      
+
+/*
+ * getLoginInfo()- Get the username and the password form the stdin and hash the password
+ * pw: password
+ * */
 void getLoginInfo(string &pw)
 {
 	std::tr1::hash<string> hashfun;
@@ -185,7 +202,7 @@ void getLoginInfo(string &pw)
     DEBUG("Hashed pw is %s\n", pw.c_str());
     return;
 }
-      
+
 /**
  * getAddrInfo() - get addr info of server
  * host: server host information
@@ -206,5 +223,3 @@ int getAddrInfo(string host, string port, struct addrinfo **serv_info)
 	addr_info		= getaddrinfo(host.c_str(), port.c_str(), &hints, serv_info);
 	return addr_info;
 }
-
-
