@@ -10,6 +10,13 @@
 using namespace std;
 #define DEBUG printf
 
+<<<<<<< HEAD
+int processRequest(struct packet *req);
+void userLogin(struct packet *req);
+void userLogout(struct packet *req);
+void listAllUsers(struct packet *req);
+void postMessage(struct packet *req);
+=======
 int processRequest(int sock_fd, struct packet *req);
 void userLogin(int sock_fd, struct packet *req);
 void userLogout(int sock_fd, struct packet *req);
@@ -20,12 +27,25 @@ int sendPacket(int sock_fd, struct packet *req, string value1);
 int sendPacket(int sock_fd, struct packet *req, unsigned int value1);
 
 unsigned int sessionID;
+>>>>>>> feature-networking
 
 /*
  * processRequest() - validate the client session
  * req: request structure
  * return 0(request processed successfully) -1(request processing failed)
  */
+<<<<<<< HEAD
+int processRequest(struct packet *req)
+{
+	if (req->cmd_code == LOGIN)
+		userLogin(req);
+	else if(req->cmd_code == LOGOUT)
+		userLogout(req);
+	else if(req->cmd_code == LIST)
+		listAllUsers(req);
+	else if(req->cmd_code == POST)
+		postMessage(req);
+=======
 int processRequest(int sock_fd, struct packet *req)
 {
 	if (req->cmd_code == LOGIN)
@@ -38,6 +58,7 @@ int processRequest(int sock_fd, struct packet *req)
 		postMessage(sock_fd, req);
 	else if(req->cmd_code == SHOW)
 		showWallMessage(sock_fd, req);
+>>>>>>> feature-networking
 	else
 		printf("Invalid Option\n");
 	return 0;
@@ -47,7 +68,11 @@ int processRequest(int sock_fd, struct packet *req)
  * userLogin() - login request for user
  * req: request structure
  */
+<<<<<<< HEAD
+void userLogin(struct packet *req)
+=======
 void userLogin(int sock_fd, struct packet *req)
+>>>>>>> feature-networking
 {
 	sessionID = 101;
 	DEBUG("User Login Request\n");
@@ -67,7 +92,11 @@ void userLogin(int sock_fd, struct packet *req)
  * userLogout() - logout request for user
  * req: request structure
  */
+<<<<<<< HEAD
+void userLogout(struct packet *req)
+=======
 void userLogout(int sock_fd, struct packet *req)
+>>>>>>> feature-networking
 {
 	DEBUG("User Logout Request\n");
 	/* TODO: User logout from DB*/
@@ -79,12 +108,19 @@ void userLogout(int sock_fd, struct packet *req)
  * listAllUsers() - List all users in the DB
  * req: request structure
  */
+<<<<<<< HEAD
+void listAllUsers(struct packet *req)
+{
+	DEBUG("Request to list all users\n");
+	/* TODO: List all users from DB*/
+=======
 void listAllUsers(int sock_fd, struct packet *req)
 {
 	DEBUG("Request to list all users\n");
 	/* TODO: List all users from DB*/
 	string userlist = "a,b,c,d,e,f";
 	sendPacket(sock_fd, req, userlist);
+>>>>>>> feature-networking
 	return;
 }
 
@@ -92,7 +128,11 @@ void listAllUsers(int sock_fd, struct packet *req)
  * postMessage() - Post a message to a user's wall
  * req: request structure
  */
+<<<<<<< HEAD
+void postMessage(struct packet *req)
+=======
 void postMessage(int sock_fd, struct packet *req)
+>>>>>>> feature-networking
 {
 	DEBUG("Request to post to wall\n");
 	/* TODO: Post to a wall */

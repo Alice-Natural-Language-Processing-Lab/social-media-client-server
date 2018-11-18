@@ -49,8 +49,11 @@ void handleClient(int sock_fd)
 		req_len = sizeof(struct packet);
 		/* Read client request */
 		readRequest(sock_fd, buffer, req_len);
+<<<<<<< HEAD
+=======
 		if(!strlen(buffer))
 			break;
+>>>>>>> feature-networking
 		/* Parse the packet for valid packet structure */
 		ret = parsePacket(req);
 		if (ret < 0)
@@ -72,7 +75,11 @@ void handleClient(int sock_fd)
 		}
 
 		/* process the request with appropriate permissions */
+<<<<<<< HEAD
+		ret = processRequest(req);
+=======
 		ret = processRequest(sock_fd, req);
+>>>>>>> feature-networking
 		if (ret < 0)
 		{
 			printf("Error (processRequest): request processing failed\n");
@@ -127,6 +134,11 @@ int parsePacket(struct packet *req)
 {
 	DEBUG("Parsing Packet\n");
 	/* TODO : Complete the function */
+<<<<<<< HEAD
+	if (req->cmd_code != LOGIN && req->cmd_code != LOGOUT && req->cmd_code != POST && req->cmd_code != LIST)
+	{
+		printf("Invalid command %d", req->cmd_code);
+=======
 	switch (req->cmd_code)
 	{
 	case LOGIN:
@@ -141,6 +153,7 @@ int parsePacket(struct packet *req)
 		break;
 	default:
 		printf("Invalid command, code = %d\n", req->cmd_code);
+>>>>>>> feature-networking
 		return -1;
 	}
 	return 0;
@@ -156,7 +169,11 @@ int sessionValidity(struct packet *req)
 	DEBUG("Checking session validity\n");
 	/* TODO : Complete the function */
 	int ret = 0;
+<<<<<<< HEAD
+	int valid = 0;
+=======
 	int valid = 1;
+>>>>>>> feature-networking
 	/* check session validity and modify variable valid*/
 
 	/* Validate permissions of the client */
