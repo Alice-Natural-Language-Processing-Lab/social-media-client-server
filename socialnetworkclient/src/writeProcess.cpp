@@ -1,8 +1,8 @@
 /*
  * writeProcess.cpp
  *
- *  Created on: Nov 14, 2018
- *      Author: pournami
+ *  Created on: Nov 18, 2018
+ *      Author: jagdeep
  */
 
 #include <sys/socket.h>
@@ -21,6 +21,7 @@
 #include <time.h>
 #include "structures.h"
 #include "func_lib.h"
+
 extern const char * getCommand(int enumVal);
 extern FILE *logfile;
 extern time_t now;
@@ -38,6 +39,9 @@ int parsePacket(struct packet *req);
 void displayContents(struct packet *resp);
 int processResponse(int sock_fd, struct packet *resp);
 
+/*
+ * writeThread(): writes to stdout
+ * sock_fd: socket file descriptor */
 void writeThread(int sock_fd)
 {
 	DEBUG("Inside write thread\n");
@@ -78,16 +82,15 @@ void writeThread(int sock_fd)
 }
 
 /*
- * readRequest() - read client request repeatedly
+ * readRequest() - read server response repeatedly
  * sock_fd: slave socket file descriptor
- * buffer: starting point of request structure
- * req_len: length of request structure
+ * buffer: starting point of response structure
+ * resp_len: length of response structure
  */
 void readResponse(int sock_fd, char *buffer, int resp_len)
 {
 	int sock_read;
-
-	/* Read each request stream repeatedly */
+	/* Read each response stream repeatedly */
 	while (1)
 	{
 		sock_read = read(sock_fd, buffer, resp_len);
@@ -101,7 +104,7 @@ void readResponse(int sock_fd, char *buffer, int resp_len)
 		}
 		buffer += sock_read;
 		resp_len -= sock_read;
-		/* Break the loop when the request structure is read completely */
+		/* Break the loop when the response structure is read completely */
 		if (!sock_read || resp_len <= 0)
 			break;
 	}
@@ -111,7 +114,7 @@ void readResponse(int sock_fd, char *buffer, int resp_len)
 
 /*
  * parsePacket() - parse the packet and validate all fields
- * req: request structure
+ * resp: response structure
  * return 0(Valid Packet) -1(Invalid Packet)
  */
 int parsePacket(struct packet *resp)
@@ -144,8 +147,8 @@ int parsePacket(struct packet *resp)
 
 /*
  * processResponse()
- * req: request structure
- * return 0(request processed successfully) -1(request processing failed)
+ * resp: response structure
+ * return 0(response processed successfully) -1(response processing failed)
  */
 int processResponse(int sock_fd, struct packet *resp)
 {
@@ -168,11 +171,12 @@ int processResponse(int sock_fd, struct packet *resp)
 	}
 	return 0;
 }
-
+/*
+ * displayContents()-Write the response packets contnets to the stdout
+ * resp: response structure
+ * */
 void displayContents(struct packet *resp)
 {
 	cout<<resp->contents.rvcd_cnts<<endl;
 	return;
 }
-
-
