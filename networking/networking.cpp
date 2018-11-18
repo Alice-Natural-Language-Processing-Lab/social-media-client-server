@@ -9,6 +9,8 @@
 #define LISTEN_QUEUE_LENGTH 15
 #define DEFAULT_PORT 5354
 
+int packetSeqNum = 0;
+
 int create_socket(bool server) {
 	int socketfd = socket(AF_INET, SOCK_STREAM, 0);
 	int portNumber = DEFAULT_PORT;	//
@@ -59,11 +61,18 @@ int destroy_socket(int socketfd) {
 	return 0;
 }
 
-int write(int socketfd, struct packet &pkt) {
-
+int write_socket(int socketfd, struct packet &pkt) {
+	int contentLength = pkt.contents.username.length() + pkt.contents.password.length() + pkt.contents.postee.length() + pkt.contents.post.length() + pkt.contents.wallOwner.length() + pkt.contents.rvcd_cnts.length();
+	pkt.content_len = (unsigned int) contentLength;
+	pkt.req_num = packetSeqNum;
+	packetSeqNum++;
+	string pktString = "";
+	sprintf(pktString, "content_len:%s,", std::to_string(pkt.content_len));
+	pktString.append()
+	
 }
 
-int read(int socketfd, struct packet &pkt) {
+int read_socket(int socketfd, struct packet &pkt) {
 	/*int received = 0;
     int bytes = 0;
     do {
