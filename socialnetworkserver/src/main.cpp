@@ -17,7 +17,7 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-	string port = "12345";
+	string port = "5354";
 	int master_fd, accept_conn;
 
 	switch (argc)
