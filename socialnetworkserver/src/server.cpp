@@ -21,13 +21,13 @@ void terminateClient(int slave_fd);
  * port: server port
  * return: master socket file descriptor
  */
+/*
 int serverInit(string port)
 {
 	int master_fd, sock_bind, sock_listen, slave_fd, sock_close;
 	struct sockaddr_in serv_addr;
 	int opt = 1;
 
-	/* Create Socket */
 	master_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (master_fd < 0)
 	{
@@ -39,7 +39,6 @@ int serverInit(string port)
 	serv_addr.sin_port			= htons(stoi(port));
 	serv_addr.sin_addr.s_addr	= htonl(INADDR_ANY);
 	setsockopt(master_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int));
-	/* Bind Socket */
 	sock_bind = bind(master_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
 	if (sock_bind < 0)
 	{
@@ -47,7 +46,6 @@ int serverInit(string port)
 		return -1;
 	}
 	DEBUG("bind()\n");
-	/* Listen on the socket */
 	sock_listen = listen(master_fd, QUEUE_LEN);
 	if (sock_listen < 0)
 	{
@@ -57,7 +55,7 @@ int serverInit(string port)
 	DEBUG("listen()\n");
 	return master_fd;
 }
-
+*/
 /*
  * acceptConnections() - accept client connections
  * master_fd: file descriptor of master socket
@@ -65,8 +63,8 @@ int serverInit(string port)
  */
 int acceptConnections(int master_fd)
 {
-	struct sockaddr_in client_addr;
-	unsigned int client_len = sizeof(client_addr);
+	//struct sockaddr_in client_addr;
+	//unsigned int client_len = sizeof(client_addr);
 	pthread_t thread;
 	pthread_attr_t attr;
 	int create_thrd, slave_fd;
@@ -75,12 +73,15 @@ int acceptConnections(int master_fd)
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	while(1)
 	{
-		memset(&client_addr, 0, sizeof(client_addr));
+		//memset(&client_addr, 0, sizeof(client_addr));
 		/* Accept client requests */
+		slave_fd = accept_socket(master_fd);
+		/*
 		slave_fd = accept(master_fd, (struct sockaddr *)&client_addr, &client_len);
+		*/
 		if (slave_fd < 0)
 		{
-			if (errno == EINTR)
+			if (slave_fd == EINTR)
 				continue;
 			printf("Error (accept): %s\n", strerror(errno));
 			return -1;
