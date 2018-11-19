@@ -13,6 +13,11 @@
 #include "func_lib.h"
 #include "mysql_lib.h"
 
+#define SERVER_URL "tcp://127.0.0.1:3306"
+#define SERVER_USERNAME "root"
+#define SERVER_PASSWORD "socialnetworkpswd"
+#define SERVER_DATABASE "SocialNetwork"
+
 using namespace std;
 
 int main(int argc, char *argv[])
