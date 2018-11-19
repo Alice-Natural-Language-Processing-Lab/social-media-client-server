@@ -1,15 +1,15 @@
 CREATE DATABASE `SocialNetwork` /*!40100 DEFAULT CHARACTER SET latin1 */;
 
-CREATE TABLE `Users` (
+CREATE TABLE `SocialNetwork`.`Users` (
   `userID` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
   `userName` varchar(25) NOT NULL,
-  `passwordHash` varchar(45) NOT NULL,
+  `passwordHash` varchar(15) NOT NULL,
   PRIMARY KEY (`userID`),
   UNIQUE KEY `userID_UNIQUE` (`userID`),
   UNIQUE KEY `userName_UNIQUE` (`userName`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-CREATE TABLE `Posts` (
+CREATE TABLE `SocialNetwork`.`Posts` (
   `postID` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
   `posterUserID` smallint(5) unsigned NOT NULL,
   `posteeUserID` smallint(5) unsigned NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE `Posts` (
   CONSTRAINT `fk_Posts_2` FOREIGN KEY (`posteeUserID`) REFERENCES `Users` (`userID`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-CREATE TABLE `Notifications` (
+CREATE TABLE `SocialNetwork`.`Notifications` (
   `notificationID` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
   `postID` smallint(5) unsigned NOT NULL,
   `userID` smallint(5) unsigned NOT NULL,
@@ -38,10 +38,10 @@ CREATE TABLE `Notifications` (
   CONSTRAINT `fk_Notifications_2` FOREIGN KEY (`postID`) REFERENCES `Posts` (`postID`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-CREATE TABLE `InteractionLog` (
+CREATE TABLE `SocialNetwork`.`InteractionLog` (
   `interactionID` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
   `userID` smallint(5) unsigned NOT NULL,
-  `sessionID` varchar(25),
+  `sessionID` varchar(15),
   `timestamp` datetime NOT NULL,
   `userStatus` boolean NOT NULL,
   `socketDescriptor` smallint(5) NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE `InteractionLog` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 insert into SocialNetwork.Users (userName, passwordHash)
-values ('frodo', 'idorhuckb039'), ('sam', 'idrhoehu082h3');
+values ('frodo', '123456789012345'), ('sam', '543210987654321');
 
 insert into SocialNetwork.Posts (posterUserID, posteeUserID, timestamp, content)
 values (1, 2, '2018-11-07', "Hello friends, how's it going?"), (2, 2, '2018-11-07', "Super political post");
@@ -62,7 +62,7 @@ insert into SocialNetwork.Notifications (postID, userID, `read`, timestamp)
 values (1, 1, 0, '2018-11-07 00:00:00'), (2,2,0,'2018-11-07');
 
 insert into SocialNetwork.InteractionLog (userID, sessionID, timestamp, userStatus, socketDescriptor, command)
-values (1, "id2k9h20dx9oeh", '2018-11-07', 1, 5, "show wall frodo");
+values (1, "234567890123456", '2018-11-07', 1, 5, "show wall frodo");
 
 select * from SocialNetwork.Users;
 select * from SocialNetwork.Posts;
@@ -76,3 +76,4 @@ DROP TABLE `SocialNetwork`.`Posts`;
 DROP TABLE `SocialNetwork`.`Users`;
 
 DROP DATABASE `SocialNetwork`;
+
