@@ -23,7 +23,8 @@ return -1 if failed to create socket
 return -2 if failed to bind
 return -3 if failed to listen
 */
-int create_socket(bool server);
+int create_server_socket(int portNum);
+int create_client_socket(char * serverName, int portNum);
 
 /*
 returns positive int slaveSocketfd when success

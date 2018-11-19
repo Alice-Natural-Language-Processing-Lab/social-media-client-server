@@ -7,26 +7,22 @@
 #include "networking.h"
 
 #define LISTEN_QUEUE_LENGTH 15
-#define DEFAULT_PORT 5354
 
 int packetSeqNum = 0;
 
-int create_socket(bool server) {
+int create_server_socket(int portNum) {
 	int socketfd = socket(AF_INET, SOCK_STREAM, 0);
-	int portNumber = DEFAULT_PORT;	//
 	
 	if(socketfd < 0) {
 		fprintf(stderr, "Failed to create Listening Socket; Error Message: %s\n", gai_strerror(errno));
 		return -1;
 	}
 
-	if(!server) return socketfd;	//not server socket, just return?
-
 	struct sockaddr_in serverAddr;
 	memset(&serverAddr, 0, sizeof(serverAddr)); //Clear structure
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_addr.s_addr = INADDR_ANY;
-	serverAddr.sin_port = htons(portNumber);
+	serverAddr.sin_port = htons(portNum);
 
 	if(bind(socketfd,(struct sockaddr *)&serverAddr , sizeof(serverAddr)) < 0) {
 		fprintf(stderr, "Failed to Bind; Error Message: %s\n", gai_strerror(errno));
@@ -42,10 +38,43 @@ int create_socket(bool server) {
 	return socketfd;
 }
 
+int create_client_socket(char * serverName, int portNum) {
+	struct addrinfo *serverInfo;
+
+	int error;
+	error = getaddrinfo(serverName, "http", NULL, &serverInfo);
+	if(error != 0) {
+		fprintf(stderr, "Failed to find addrinfo for the URL: %s, error: %s\n", serverInfo, gai_strerror(error));
+		return -1;
+	}
+
+	struct addrinfo *currentInfo;
+	int socketfd = 0;
+	for(currentInfo = serverInfo; currentInfo != NULL; currentInfo = currentInfo->ai_next) {
+		//create socket
+		socketfd = socket(currentInfo->ai_family, currentInfo->ai_socktype, currentInfo->ai_protocol);
+		if(socketfd < 0) {
+			continue;
+		}
+		//connect socket
+		struct sockaddr_in serverAddress;
+		memset(&serverAddress, 0, sizeof(serverAddress));
+		memcpy(&serverAddress, currentInfo->ai_addr, currentInfo->ai_addrlen);
+		serverAddress.sin_family = AF_INET;
+		serverAddress.sin_port = htons(portNum);
+
+		if(connect(socketfd, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) > -1) {
+			break; //success
+		}
+	}
+
+	return socketfd
+}
+
 int accept_socket(int socketfd) {
 	struct sockaddr_in clientAddr;
-	int clientSize = sizeof(clientAddr);
-	slaveSocket = accept(socketfd, (struct sockaddr *)&clientAddr, &clientSize);
+	unsigned int clientSize = sizeof(clientAddr);
+	int slaveSocket = accept(socketfd, (struct sockaddr *)&clientAddr, &clientSize);
 	if(slaveSocket < 0) {
 		fprintf(stderr, "Failed to Accept Socket; Error Message: %s\n", gai_strerror(errno));
 		return -1;
