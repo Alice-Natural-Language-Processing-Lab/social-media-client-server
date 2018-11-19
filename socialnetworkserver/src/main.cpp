@@ -24,6 +24,7 @@ int main() {
 	MySQLDatabaseDriver databaseDriver;
 	MySQLDatabaseInterface database(databaseDriver, SERVER_URL, SERVER_USERNAME,
 	SERVER_PASSWORD, SERVER_DATABASE);
+	Notifications notifications(&database);
 
 	while (true) {
 		getline(cin, query);
