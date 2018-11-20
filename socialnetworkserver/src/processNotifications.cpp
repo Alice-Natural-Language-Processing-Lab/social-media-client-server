@@ -5,12 +5,16 @@
  *      Author: pournami
  */
 #include <pthread.h>
+#include "func_lib.h"
 
 extern pthread_cond_t notify_cond;
 extern pthread_mutex_t notify_mutex;
 
+#define DEBUG	printf
+
 void processNotification()
 {
+	DEBUG("Notification Thread created\n");
 	/*
 	int sock_fd, read, sock_write;
 	Notification notificiation;

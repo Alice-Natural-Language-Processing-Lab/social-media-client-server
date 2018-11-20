@@ -19,14 +19,9 @@ const char * getCommand(int enumVal)
 }
 
 void handleClient(int sock_fd);
-void readRequest(int sock_fd, char *buffer, int req_len);
+int readRequest(int sock_fd, char *buffer, int req_len);
 int parsePacket(struct packet *req);
 int sessionValidity(struct packet *req);
-int permissionValidity(struct packet *req, int valid);
-
-/*
- * client initial setup
- */
 
 /*
  * handleClient() - handle each client connection
@@ -49,8 +44,8 @@ void handleClient(int sock_fd)
 		req_len = sizeof(struct packet);
 
 		/* Read client request */
-		readRequest(sock_fd, buffer, req_len);
-		if(!strlen(buffer))
+		sock_read = readRequest(sock_fd, buffer, req_len);
+		if(!sock_read || sock_read < 0)
 			break;
 
 		/* Parse the packet for valid packet structure */
@@ -61,8 +56,8 @@ void handleClient(int sock_fd)
 			terminateClient(sock_fd);
 		}
 		now = time(NULL);
-		DEBUG("%s: Request received:\n", strtok(ctime(&now), "\n"));
-		DEBUG("%d | %s | %d | %d\n", req->content_len, getCommand(req->cmd_code), req->req_num, req->sessionId);
+		DEBUG("Request received:\n");
+		DEBUG("[%s]: %d | %s | %d | %d\n", strtok(ctime(&now), "\n"), req->content_len, getCommand(req->cmd_code), req->req_num, req->sessionId);
 
 		/* Validate session of the client */
 		ret = sessionValidity(req);
@@ -96,7 +91,7 @@ void handleClient(int sock_fd)
  * buffer: starting point of request structure
  * req_len: length of request structure
  */
-void readRequest(int sock_fd, char *buffer, int req_len)
+int readRequest(int sock_fd, char *buffer, int req_len)
 {
 	int sock_read;
 	char *error = (char *)malloc(sizeof(char) * ERR_LEN);
@@ -109,7 +104,7 @@ void readRequest(int sock_fd, char *buffer, int req_len)
 		{
 			strerror_r(errno, error, ERR_LEN);
 			printf("Error (read): %s\n", error);
-			return;
+			return -1;
 		}
 		buffer += sock_read;
 		req_len	-= sock_read;
@@ -118,7 +113,7 @@ void readRequest(int sock_fd, char *buffer, int req_len)
 			break;
 	}
 	cout<<sock_read<<" bytes read\n";
-	return;
+	return sock_read;
 }
 
 /*
@@ -129,7 +124,6 @@ void readRequest(int sock_fd, char *buffer, int req_len)
 int parsePacket(struct packet *req)
 {
 	DEBUG("Parsing Packet\n");
-	/* TODO : Complete the function */
 	switch (req->cmd_code)
 	{
 	case LOGIN:
@@ -165,8 +159,6 @@ int sessionValidity(struct packet *req)
 	int ret = 0;
 	int valid = 0;
 	/* check session validity and modify variable valid*/
-
-	/* Validate permissions of the client */
 
 	return ret;
 }
