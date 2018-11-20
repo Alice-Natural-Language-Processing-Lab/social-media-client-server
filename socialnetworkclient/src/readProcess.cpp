@@ -1,9 +1,10 @@
 /*
  * readProcess.cpp
  *
- *  Created on: Nov 18, 2018
- *      Author: jagdeep
+ *  Created on: Nov 14, 2018
+ *      Author: pournami
  */
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -19,10 +20,9 @@
 #include <pthread.h>
 #include "structures.h"
 #include "func_lib.h"
-
 extern string username;
 extern const char * getCommand(int enumVal);
-extern FILE *logfile;
+//extern FILE *logfile;
 extern time_t now;
 extern char *error;
 extern unsigned int sessionID;
@@ -46,39 +46,36 @@ void createShowPacket(string wallOwner, struct packet &pkt);
 int logoutSignal;
 int req_num;
 
-/*
- * readThread()-Takes input from stdin
- * sock_fd: socket file descriptor
- */
 void readThread(int sock_fd)
 {
     /*Print the list of commands*/
 	DEBUG("Inside read thread\n");
     int cmd_entered;
+    string input;
+
     printCmdList();
     while(1)
     {
-        cin>>cmd_entered;
+    	getline(std::cin, input);
+    	cmd_entered = atoi(input.c_str());
         if (cmd_entered == 0)
             printCmdList();
         else if (cmd_entered == 1)
         {
-            /*If command is list: Call list users function*/
+            /*Call list users function*/
             listUsers(sock_fd);
         }
         else if (cmd_entered == 2)
         {
-            /*If command is post: Call post function*/
+            /*Call post function*/
             post(sock_fd);
         }
         else if (cmd_entered == 3)
         {
-        	/*If command is to show the wall*/
         	show(sock_fd);
         }
         else if (cmd_entered == 4)
         {
-        	/*If command is logout */
         	logout(sock_fd);
         	close(sock_fd);
         	exit(0);
@@ -91,29 +88,34 @@ void readThread(int sock_fd)
     pthread_exit(NULL);
 }
 
-/*
- * listUsers()-Send the command name "LIST" to the server side to get the list of all the users
- * sock_fd: socket file descriptor
- * */
+void printCmdList()
+{
+    cout<<"Commands (Enter 0- 3)\n"<<"--------------\n";
+    cout<<"1. List all users\n";
+    cout<<"2. Post to wall\n";
+    cout<<"3. Show wall\n";
+    cout<<"4. Logout\n";
+    cout<<"[Enter 0 to print the command list]\n\n";
+    return;
+}
+
 void listUsers(int sock_fd)
 {
     sendPacket(sock_fd, LIST, "", "");
     return;
 }
 
-/*
- * post()-Send the command name "POST", postee name and the post contents to the server
- * sock_fd: socket file descriptor
- * */
 void post(int sock_fd)
 {
     int postWall;
     string name;
     string post;
+    string input;
 
     cout<<"1. Own wall\n";
     cout<<"2. Others wall\n";
-    cin>>postWall;
+    getline(std::cin, input);
+    postWall = atoi(input.c_str());
 	if (postWall == 1)
 	{
 		name = username;
@@ -135,18 +137,16 @@ void post(int sock_fd)
     return;
 }
 
-/*
- * show()-Send the command "SHOW" and the name whose wall has to be shown to the server
- * sock_fd: socket file descriptor
- * */
 void show(int sock_fd)
 {
     int showWall;
     string name;
+    string input;
 
     cout<<"1. Own wall\n";
     cout<<"2. Others wall\n";
-    cin>>showWall;
+    getline(std::cin, input);
+    showWall = atoi(input.c_str());
 	if (showWall == 1)
 	{
 		name = username;
@@ -165,37 +165,11 @@ void show(int sock_fd)
     return;
 }
 
-/*
- * logout()-Send the command "logout" to the server
- * sock_fd: socket file descriptor
- * */
 void logout(int sock_fd)
 {
 	sendPacket(sock_fd, LOGOUT, "", "");
 }
 
-/*
- * printCndList()-Print the list of available commands
- * */
-void printCmdList()
-{
-    cout<<"Commands (Enter 0- 3)\n"<<"--------------\n";
-    cout<<"1. List all users\n";
-    cout<<"2. Post to wall\n";
-    cout<<"3. Show wall\n";
-    cout<<"4. Logout\n";
-    cout<<"[Enter 0 to print the command list]\n\n";
-    return;
-}
-
-/*
- * sendPacket()-Send the packet to the server side
- * sock_fd: socket file descriptor
- * cmd_code: the command name
- * value1: Username(for login command), Postee(for post command), Wallowner(for show command) and NULL(for rest of the commands)
- * value2: Password(for login command), Post(for post command) and NULL(for rest of the commands)
- * return 0(Success) or -1(Failure)
- * */
 int sendPacket(int sock_fd, enum commands cmd_code, string value1, string value2)
 {
     struct packet req;
@@ -231,36 +205,23 @@ int sendPacket(int sock_fd, enum commands cmd_code, string value1, string value2
     {
     	strerror_r(errno, error, ERR_LEN);
     	printf("Error (write): %s\n", error);
-    	fprintf(logfile, "%s: Error (read): %s\n", strtok(ctime(&now), "\n"), error);
+    	//fprintf(logfile, "%s: Error (read): %s\n", strtok(ctime(&now), "\n"), error);
         return -1;
     }
-    fprintf(logfile, "%s: Request sent:\n", strtok(ctime(&now), "\n"));
-    fprintf(logfile, "%d | %s | %d | %d\n", req.content_len, getCommand(req.cmd_code), req.req_num, req.sessionId);
+    //fprintf(logfile, "%s: Request sent:\n", strtok(ctime(&now), "\n"));
+    //fprintf(logfile, "%d | %s | %d | %d\n", req.content_len, getCommand(req.cmd_code), req.req_num, req.sessionId);
     DEBUG("%d bytes sent\n", send_bytes);
     return 0;
 }
 
-/*
- * createLOginPacket()-Creates login packet
- * username: Username
- * pw: Password
- * pkt: request structure
- * */
 void createLoginPacket(string username, string pw, struct packet &pkt)
 {
 	strcpy(pkt.contents.username, (const char *)username.c_str());
 	strcpy(pkt.contents.password, (const char *)pw.c_str());
 	//pkt.contents.username = username;
 	//pkt.contents.password = pw;
-
 }
 
-/*
- * createPostPacket()-Create packet for post command
- * postee: postee name
- * post: content that is supposed to be posted
- * pkt: request structure
- * */
 void createPostPacket(string postee, string post, struct packet &pkt)
 {
 	strcpy(pkt.contents.postee, (const char *)postee.c_str());
@@ -269,11 +230,6 @@ void createPostPacket(string postee, string post, struct packet &pkt)
 	//pkt.contents.post = post;
 }
 
-/*
- * createShowPacket()-Create packet for show command
- * wallOwner: The wall owner whose wall client is asking for
- * pkt: request structure
- * */
 void createShowPacket(string wallOwner, struct packet &pkt)
 {
 	strcpy(pkt.contents.wallOwner, (const char *)wallOwner.c_str());

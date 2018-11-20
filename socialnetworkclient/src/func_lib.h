@@ -1,8 +1,8 @@
 /*
  * func_lib.h
  *
- *  Created on: Nov 18, 2018
- *      Author: jagdeep
+ *  Created on: Nov 14, 2018
+ *      Author: pournami
  */
 
 #ifndef FUNC_LIB_H_
@@ -27,8 +27,8 @@
 static const char * commandList[] = { "LOGIN", "LOGOUT", "POST", "SHOW", "LIST", "NOTIFY", "ACK" };
 
 void getLoginInfo(string &pw);
-int enterLoginMode(string servername, string serverport);
-int enterWebBrowserMode(string servername, string serverport);
+int enterLoginMode(string servername, int serverport);
+int enterWebBrowserMode(string servername, int serverport);
 int getAddrInfo(string host, string port, struct addrinfo **serv_info);
 
 void readThread(int sock_fd);
@@ -53,4 +53,3 @@ int processResponse(int sock_fd, struct packet *resp);
 
 
 #endif /* FUNC_LIB_H_ */
-

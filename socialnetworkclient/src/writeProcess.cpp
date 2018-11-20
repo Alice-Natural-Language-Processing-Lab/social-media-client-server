@@ -1,8 +1,8 @@
 /*
  * writeProcess.cpp
  *
- *  Created on: Nov 18, 2018
- *      Author: jagdeep
+ *  Created on: Nov 14, 2018
+ *      Author: pournami
  */
 
 #include <sys/socket.h>
@@ -21,9 +21,8 @@
 #include <time.h>
 #include "structures.h"
 #include "func_lib.h"
-
 extern const char * getCommand(int enumVal);
-extern FILE *logfile;
+//extern FILE *logfile;
 extern time_t now;
 extern char *error;
 extern unsigned int sessionID;
@@ -39,9 +38,6 @@ int parsePacket(struct packet *req);
 void displayContents(struct packet *resp);
 int processResponse(int sock_fd, struct packet *resp);
 
-/*
- * writeThread(): writes to stdout
- * sock_fd: socket file descriptor */
 void writeThread(int sock_fd)
 {
 	DEBUG("Inside write thread\n");
@@ -66,8 +62,8 @@ void writeThread(int sock_fd)
 			return;
 		}
 		now = time(NULL);
-		fprintf(logfile, "%s: Response received:\n", strtok(ctime(&now), "\n"));
-		fprintf(logfile, "%d | %s | %d | %d\n", resp->content_len, getCommand(resp->cmd_code), resp->req_num, resp->sessionId);
+		//fprintf(logfile, "%s: Response received:\n", strtok(ctime(&now), "\n"));
+		//fprintf(logfile, "%d | %s | %d | %d\n", resp->content_len, getCommand(resp->cmd_code), resp->req_num, resp->sessionId);
 		/* process the response  */
 		ret = processResponse(sock_fd, resp);
 		if (ret < 0)
@@ -75,22 +71,23 @@ void writeThread(int sock_fd)
 			printf("Error (processRequest): request processing failed\n");
 			return;
 		}
-		fflush(logfile);
+		//fflush(logfile);
 	}
-	fclose(logfile);
+	//fclose(logfile);
 
 }
 
 /*
- * readRequest() - read server response repeatedly
+ * readRequest() - read client request repeatedly
  * sock_fd: slave socket file descriptor
- * buffer: starting point of response structure
- * resp_len: length of response structure
+ * buffer: starting point of request structure
+ * req_len: length of request structure
  */
 void readResponse(int sock_fd, char *buffer, int resp_len)
 {
 	int sock_read;
-	/* Read each response stream repeatedly */
+
+	/* Read each request stream repeatedly */
 	while (1)
 	{
 		sock_read = read(sock_fd, buffer, resp_len);
@@ -99,12 +96,12 @@ void readResponse(int sock_fd, char *buffer, int resp_len)
 			strerror_r(errno, error, ERR_LEN);
 			printf("Error (read): %s\n", error);
 			now = time(NULL);
-			fprintf(logfile, "%s: Error (read): %s\n", strtok(ctime(&now), "\n"), error);
+			//fprintf(logfile, "%s: Error (read): %s\n", strtok(ctime(&now), "\n"), error);
 			return;
 		}
 		buffer += sock_read;
 		resp_len -= sock_read;
-		/* Break the loop when the response structure is read completely */
+		/* Break the loop when the request structure is read completely */
 		if (!sock_read || resp_len <= 0)
 			break;
 	}
@@ -114,7 +111,7 @@ void readResponse(int sock_fd, char *buffer, int resp_len)
 
 /*
  * parsePacket() - parse the packet and validate all fields
- * resp: response structure
+ * req: request structure
  * return 0(Valid Packet) -1(Invalid Packet)
  */
 int parsePacket(struct packet *resp)
@@ -138,8 +135,8 @@ int parsePacket(struct packet *resp)
 	default:
 		printf("Invalid command, code = %d\n", resp->cmd_code);
 		now = time(NULL);
-		fprintf(logfile, "%s: Error (parsePacket): Invalid command, code = %d\n",
-				strtok(ctime(&now), "\n"), resp->cmd_code);
+		//fprintf(logfile, "%s: Error (parsePacket): Invalid command, code = %d\n",
+				//strtok(ctime(&now), "\n"), resp->cmd_code);
 		return -1;
 	}
 	return 0;
@@ -147,36 +144,31 @@ int parsePacket(struct packet *resp)
 
 /*
  * processResponse()
- * resp: response structure
- * return 0(response processed successfully) -1(response processing failed)
+ * req: request structure
+ * return 0(request processed successfully) -1(request processing failed)
  */
 int processResponse(int sock_fd, struct packet *resp)
 {
 
 	if(resp->cmd_code == LIST || resp->cmd_code == SHOW || resp->cmd_code == NOTIFY)
 		displayContents(resp);
-	else if(resp->cmd_code == ACK)
-	{
-		//TODO: do ack functionality
-	}
 	else if (resp->cmd_code == LOGIN)
     	sessionID = resp->sessionId;
 	else
 	{
 		printf("Error (processResponse):Invalid Option\n");
 		now = time(NULL);
-		fprintf(logfile, "%s: Error (processResponse): Invalid Option, command code = %d\n",
-						strtok(ctime(&now), "\n"), resp->cmd_code);
+		//fprintf(logfile, "%s: Error (processResponse): Invalid Option, command code = %d\n",
+						//strtok(ctime(&now), "\n"), resp->cmd_code);
 		return -1;
 	}
 	return 0;
 }
-/*
- * displayContents()-Write the response packets contnets to the stdout
- * resp: response structure
- * */
+
 void displayContents(struct packet *resp)
 {
 	cout<<resp->contents.rvcd_cnts<<endl;
 	return;
 }
+
+
