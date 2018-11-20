@@ -21,6 +21,7 @@ Current Status - server
 2. Implemented process each client,packet parsing, session validity check and request processing functionalities
 2. server will create each thread for each client and a single thread for notification
 3. server will call the APIs of database to fetch information
+
 TODO:
 1. Interfacing of notification thread
 2. Checking the database interfacing
@@ -33,5 +34,6 @@ Current Status - Client
 2. Implemented user interfacing
 3. Implemented password hashing
 4. Incorporated socket creation from the networking library
+
 TODO:
 1. Need to incorporate read/write from networking library
