@@ -4,7 +4,7 @@ CMPE207 Project Repository
 Execute the client and server side using these commands
 Server
 ------
-g++ -std=c++11 *.cpp -o server -pthread
+g++ -std=c++11 *.cpp -o server -pthread -lmysqlcppconn
 
 ./server
 
