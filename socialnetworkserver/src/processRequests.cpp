@@ -6,17 +6,12 @@
  */
 #include "func_lib.h"
 #include "structures.h"
+extern pthread_cond_t notify_cond;
+extern pthread_mutex_t notify_mutex;
 
 using namespace std;
 #define DEBUG printf
 
-<<<<<<< HEAD
-int processRequest(struct packet *req);
-void userLogin(struct packet *req);
-void userLogout(struct packet *req);
-void listAllUsers(struct packet *req);
-void postMessage(struct packet *req);
-=======
 int processRequest(int sock_fd, struct packet *req);
 void userLogin(int sock_fd, struct packet *req);
 void userLogout(int sock_fd, struct packet *req);
@@ -27,25 +22,12 @@ int sendPacket(int sock_fd, struct packet *req, string value1);
 int sendPacket(int sock_fd, struct packet *req, unsigned int value1);
 
 unsigned int sessionID;
->>>>>>> feature-networking
 
 /*
  * processRequest() - validate the client session
  * req: request structure
  * return 0(request processed successfully) -1(request processing failed)
  */
-<<<<<<< HEAD
-int processRequest(struct packet *req)
-{
-	if (req->cmd_code == LOGIN)
-		userLogin(req);
-	else if(req->cmd_code == LOGOUT)
-		userLogout(req);
-	else if(req->cmd_code == LIST)
-		listAllUsers(req);
-	else if(req->cmd_code == POST)
-		postMessage(req);
-=======
 int processRequest(int sock_fd, struct packet *req)
 {
 	if (req->cmd_code == LOGIN)
@@ -58,7 +40,6 @@ int processRequest(int sock_fd, struct packet *req)
 		postMessage(sock_fd, req);
 	else if(req->cmd_code == SHOW)
 		showWallMessage(sock_fd, req);
->>>>>>> feature-networking
 	else
 		printf("Invalid Option\n");
 	return 0;
@@ -68,13 +49,11 @@ int processRequest(int sock_fd, struct packet *req)
  * userLogin() - login request for user
  * req: request structure
  */
-<<<<<<< HEAD
-void userLogin(struct packet *req)
-=======
 void userLogin(int sock_fd, struct packet *req)
->>>>>>> feature-networking
 {
+	int ret;
 	sessionID = 101;
+
 	DEBUG("User Login Request\n");
 	DEBUG("packet len is %d\n",req->content_len);
 	DEBUG("req num is %d\n",req->req_num);
@@ -84,7 +63,18 @@ void userLogin(int sock_fd, struct packet *req)
 	cout<<req->contents.username<<endl;
 	DEBUG("password is :");
 	cout<<req->contents.password<<endl;
+	/*
+	ret = login(req);
+	if (ret < 0)
+	{
+		printf("Error (login): Login to database failed\n");
+		return;
+	}
 	sendPacket(sock_fd, req, sessionID);
+	pthread_mutex_lock(&notify_mutex);
+	pthread_cond_signal(&notify_cond);
+	pthread_mutex_unlock(&notify_mutex);
+	*/
 	return;
 }
 
@@ -92,15 +82,21 @@ void userLogin(int sock_fd, struct packet *req)
  * userLogout() - logout request for user
  * req: request structure
  */
-<<<<<<< HEAD
-void userLogout(struct packet *req)
-=======
 void userLogout(int sock_fd, struct packet *req)
->>>>>>> feature-networking
 {
+	int ret;
+
 	DEBUG("User Logout Request\n");
 	/* TODO: User logout from DB*/
 	DEBUG("Terminating client connection\n");
+	/*
+	ret = logout(req);
+	if (ret < 0)
+	{
+		printf("Error (logout): User logging out from database failed\n");
+		return;
+	}
+	 */
 	return;
 }
 
@@ -108,19 +104,22 @@ void userLogout(int sock_fd, struct packet *req)
  * listAllUsers() - List all users in the DB
  * req: request structure
  */
-<<<<<<< HEAD
-void listAllUsers(struct packet *req)
-{
-	DEBUG("Request to list all users\n");
-	/* TODO: List all users from DB*/
-=======
 void listAllUsers(int sock_fd, struct packet *req)
 {
+	int ret;
+
 	DEBUG("Request to list all users\n");
 	/* TODO: List all users from DB*/
 	string userlist = "a,b,c,d,e,f";
+	/*
+	ret = listUsers(req);
+	if (ret < 0)
+	{
+		printf("Error (listUsers): Fetching user list from database failed\n");
+		return;
+	}
+	*/
 	sendPacket(sock_fd, req, userlist);
->>>>>>> feature-networking
 	return;
 }
 
@@ -128,25 +127,45 @@ void listAllUsers(int sock_fd, struct packet *req)
  * postMessage() - Post a message to a user's wall
  * req: request structure
  */
-<<<<<<< HEAD
-void postMessage(struct packet *req)
-=======
 void postMessage(int sock_fd, struct packet *req)
->>>>>>> feature-networking
 {
+	int ret;
+
 	DEBUG("Request to post to wall\n");
 	/* TODO: Post to a wall */
 	DEBUG("postee is %s\n", req->contents.postee);
 	DEBUG("post is %s\n", req->contents.post);
+	/*
+	ret = postOnWall(req);
+	if (ret < 0)
+	{
+		printf("Error (postOnWall): post to database wall failed\n");
+		return;
+	}
+	pthread_mutex_lock(&notify_mutex);
+	pthread_cond_signal(&notify_cond);
+	pthread_mutex_unlock(&notify_mutex);
+	*/
+
 	return;
 }
 
 void showWallMessage(int sock_fd, struct packet *req)
 {
+	int ret;
+
 	DEBUG("Request to show wall\n");
 	/* TODO: send the wall */
 	DEBUG("show %s's wall\n", req->contents.wallOwner);
 	string wall = "hi \nhello \nhow are you";
+	/*
+	ret = showWall(req);
+	if (ret < 0)
+	{
+		printf("Error (showWall): Fetching wall from database failed\n");
+		return;
+	}
+	 */
 	sendPacket(sock_fd, req, wall);
 	return;
 }

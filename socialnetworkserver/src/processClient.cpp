@@ -11,7 +11,7 @@
 using namespace std;
 
 #define ERR_LEN			256
-#define DEBUG
+#define DEBUG printf
 
 const char * getCommand(int enumVal)
 {
@@ -47,13 +47,12 @@ void handleClient(int sock_fd)
 	{
 		memset(req, 0, sizeof(struct packet));
 		req_len = sizeof(struct packet);
+
 		/* Read client request */
 		readRequest(sock_fd, buffer, req_len);
-<<<<<<< HEAD
-=======
 		if(!strlen(buffer))
 			break;
->>>>>>> feature-networking
+
 		/* Parse the packet for valid packet structure */
 		ret = parsePacket(req);
 		if (ret < 0)
@@ -64,6 +63,7 @@ void handleClient(int sock_fd)
 		now = time(NULL);
 		DEBUG("%s: Request received:\n", strtok(ctime(&now), "\n"));
 		DEBUG("%d | %s | %d | %d\n", req->content_len, getCommand(req->cmd_code), req->req_num, req->sessionId);
+
 		/* Validate session of the client */
 		ret = sessionValidity(req);
 		if (ret < 0) /* session validity could not be established */
@@ -75,11 +75,7 @@ void handleClient(int sock_fd)
 		}
 
 		/* process the request with appropriate permissions */
-<<<<<<< HEAD
-		ret = processRequest(req);
-=======
 		ret = processRequest(sock_fd, req);
->>>>>>> feature-networking
 		if (ret < 0)
 		{
 			printf("Error (processRequest): request processing failed\n");
@@ -134,11 +130,6 @@ int parsePacket(struct packet *req)
 {
 	DEBUG("Parsing Packet\n");
 	/* TODO : Complete the function */
-<<<<<<< HEAD
-	if (req->cmd_code != LOGIN && req->cmd_code != LOGOUT && req->cmd_code != POST && req->cmd_code != LIST)
-	{
-		printf("Invalid command %d", req->cmd_code);
-=======
 	switch (req->cmd_code)
 	{
 	case LOGIN:
@@ -151,9 +142,12 @@ int parsePacket(struct packet *req)
 		break;
 	case SHOW:
 		break;
+	case ACK:
+		break;
+	case NOTIFY:
+		break;
 	default:
 		printf("Invalid command, code = %d\n", req->cmd_code);
->>>>>>> feature-networking
 		return -1;
 	}
 	return 0;
@@ -169,37 +163,11 @@ int sessionValidity(struct packet *req)
 	DEBUG("Checking session validity\n");
 	/* TODO : Complete the function */
 	int ret = 0;
-<<<<<<< HEAD
 	int valid = 0;
-=======
-	int valid = 1;
->>>>>>> feature-networking
 	/* check session validity and modify variable valid*/
 
 	/* Validate permissions of the client */
-	ret = permissionValidity(req, valid);
-	if (ret < 0)
-	{
-		printf("User do not have permission to execute the command\n");
-		return -1;
-	}
+
 	return ret;
 }
 
-/*
- * permissionValidity() - validate the client session
- * req: request structure
- * return 0(Valid permission) -1(Invalid permission)
- */
-int permissionValidity(struct packet *req, int valid)
-{
-	DEBUG("Checking permission for request\n");
-	/* TODO : Complete the function */
-	int ret = 0;
-	if (!valid)
-	{
-		if (req->cmd_code != LOGIN)
-			return -1;
-	}
-	return 0;
-}
