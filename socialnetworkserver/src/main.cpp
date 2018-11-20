@@ -13,6 +13,8 @@
 #include "func_lib.h"
 #include "mysql_lib.h"
 
+#include "mysql_lib.h"
+
 #define SERVER_URL "tcp://127.0.0.1:3306"
 #define SERVER_USERNAME "root"
 #define SERVER_PASSWORD "socialnetworkpswd"
