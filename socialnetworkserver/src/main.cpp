@@ -23,7 +23,7 @@ int main() {
 
 	string query, user_name;
 	MySQLDatabaseDriver databaseDriver;
-	MySQLDatabaseInterface database(databaseDriver, SERVER_URL, SERVER_USERNAME,
+	MySQLDatabaseInterface database(&databaseDriver, SERVER_URL, SERVER_USERNAME,
 	SERVER_PASSWORD, SERVER_DATABASE);
 	Notifications notifications(&database);
 

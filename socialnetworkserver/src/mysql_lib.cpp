@@ -20,11 +20,12 @@ MySQLDatabaseDriver::MySQLDatabaseDriver() {
 	try {
 		driver = get_driver_instance(); //not thread safe
 	} catch (sql::SQLException &e) {
-		cout << "# ERR: SQLException in " << __FILE__;
-		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-		cout << "# ERR: " << e.what();
-		cout << " (MySQL error code: " << e.getErrorCode();
-		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
 	}
 }
 
@@ -32,20 +33,21 @@ MySQLDatabaseDriver::~MySQLDatabaseDriver() {
 }
 
 MySQLDatabaseInterface::MySQLDatabaseInterface(
-		MySQLDatabaseDriver databaseDriver, string server_url,
+		MySQLDatabaseDriver* databaseDriver, string server_url,
 		string server_username, string server_password,
 		string server_database) {
 
-	driver = databaseDriver.driver;
+	driver = databaseDriver->driver;
 	try {
 		con = driver->connect(server_url, server_username, server_password);
 		con->setSchema(server_database);
 	} catch (sql::SQLException &e) {
-		cout << "# ERR: SQLException in " << __FILE__;
-		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-		cout << "# ERR: " << e.what();
-		cout << " (MySQL error code: " << e.getErrorCode();
-		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
 	}
 }
 
@@ -61,26 +63,27 @@ void MySQLDatabaseInterface::getResults(string query) {
 		res = stmt->executeQuery(query.c_str());
 		result_set_meta_data = res->getMetaData();
 		column_count = result_set_meta_data->getColumnCount();
-		cout << "\nResults:\n";
+		std::cout << "\nResults:\n";
 		do {
 			for (unsigned int i = 1; i <= column_count; i++) {
 				if (res->isBeforeFirst())
-					cout << "\t" << result_set_meta_data->getColumnName(i);
+					std::cout << "\t" << result_set_meta_data->getColumnName(i);
 				else
-					cout << "\t" << res->getString(i);
+					std::cout << "\t" << res->getString(i);
 			}
-			cout << endl;
+			std::cout << std::endl;
 		} while (res->next());
-		cout << endl;
+		std::cout << std::endl;
 
 		delete stmt;
 		delete res;
 	} catch (sql::SQLException &e) {
-		cout << "# ERR: SQLException in " << __FILE__;
-		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-		cout << "# ERR: " << e.what();
-		cout << " (MySQL error code: " << e.getErrorCode();
-		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
 	}
 }
 
@@ -119,6 +122,11 @@ int MySQLDatabaseInterface::showWall(struct packet &pkt) {
 }
 
 int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
+
+	return 0;
+}
+
+int MySQLDatabaseInterface::hasValidSession(struct packet& pkt) {
 
 	return 0;
 }
