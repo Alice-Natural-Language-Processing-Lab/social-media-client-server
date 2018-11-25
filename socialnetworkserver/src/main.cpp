@@ -21,11 +21,24 @@ using namespace std;
 
 int main() {
 
-	string query, user_name;
+	string query, user_name, timeout;
 	MySQLDatabaseDriver databaseDriver;
-	MySQLDatabaseInterface database(&databaseDriver, SERVER_URL, SERVER_USERNAME,
+	MySQLDatabaseInterface database(&databaseDriver, SERVER_URL,
+	SERVER_USERNAME,
 	SERVER_PASSWORD, SERVER_DATABASE);
 	Notifications notifications(&database);
+
+	packet test_packet1, test_packet2;
+	test_packet1.sessionId = 3456789012;
+	test_packet2.sessionId = 2345678901;
+
+	getline(cin, timeout);
+	database.session_timeout = atoi(timeout.c_str());
+
+	cout << "test packet1:" << database.hasValidSession(test_packet1) << "\n"
+			<< test_packet1.contents.rvcd_cnts << endl;
+	cout << "test packet2:" << database.hasValidSession(test_packet2) << "\n"
+			<< test_packet2.contents.rvcd_cnts << endl;
 
 	while (true) {
 		getline(cin, query);

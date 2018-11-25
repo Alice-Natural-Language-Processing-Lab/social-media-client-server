@@ -44,9 +44,12 @@ private:
 	sql::PreparedStatement* pstmt;
 	sql::ResultSet* res;
 	sql::ResultSetMetaData* result_set_meta_data;
-	unsigned int column_count;
+
+	void printResults(sql::ResultSet* result_set);
 
 public:
+	int session_timeout = 10; // in minutes between 0 and 59
+
 	MySQLDatabaseInterface(MySQLDatabaseDriver* databaseDriver,
 			string server_url, string server_username, string server_password,
 			string server_database);
@@ -74,7 +77,7 @@ public:
 
 	int hasValidSession(struct packet& pkt);
 	/*
-	 * This function checks if the session in the packet is valid,
+	 * This function checks if the session in the packet is valid based on session_timeout,
 	 * returns 0 if valid, otherwise returns -1 and modifies packet to have error message
 	 */
 };
