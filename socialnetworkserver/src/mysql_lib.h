@@ -44,10 +44,13 @@ private:
 	sql::PreparedStatement* pstmt;
 	sql::ResultSet* res;
 	sql::ResultSetMetaData* result_set_meta_data;
-	unsigned int column_count;
+
+	void printResults(sql::ResultSet* result_set);
 
 public:
-	MySQLDatabaseInterface(MySQLDatabaseDriver databaseDriver,
+	int session_timeout = 10; // in minutes between 0 and 59
+
+	MySQLDatabaseInterface(MySQLDatabaseDriver* databaseDriver,
 			string server_url, string server_username, string server_password,
 			string server_database);
 	~MySQLDatabaseInterface();
@@ -66,15 +69,15 @@ public:
 	 */
 
 	//consider having some of these functions return bool instead of ints?
-	int login(struct packet &pkt);
-	int listUsers(struct packet &pkt);
-	int showWall(struct packet &pkt);
-	int postOnWall(struct packet &pkt);
-	int logout(struct packet &pkt);
+	int login(struct packet& pkt);
+	int listUsers(struct packet& pkt);
+	int showWall(struct packet& pkt);
+	int postOnWall(struct packet& pkt);
+	int logout(struct packet& pkt);
 
-	int hasValidSession(struct packet &pkt);
+	int hasValidSession(struct packet& pkt);
 	/*
-	 * This function checks if the session in the packet is valid,
+	 * This function checks if the session in the packet is valid based on session_timeout,
 	 * returns 0 if valid, otherwise returns -1 and modifies packet to have error message
 	 */
 };
@@ -108,7 +111,7 @@ public:
 	 * Starts on an empty "0th" entry so much be called once to get to the first entry.
 	 */
 
-	int sendNotification(struct packet &pkt);
+	int sendNotification(struct packet& pkt);
 	/*
 	 * Generates the notification packet and returns the socket descriptor to send it to.
 	 * Returns -1 if fails.
