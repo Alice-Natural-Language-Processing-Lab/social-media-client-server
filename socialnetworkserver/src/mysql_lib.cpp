@@ -7,14 +7,6 @@
 
 #include "mysql_lib.h"
 
-Notifications::Notifications(MySQLDatabaseInterface* dbInterface) {
-	databaseInterface = dbInterface;
-}
-
-Notifications::~Notifications() {
-
-}
-
 MySQLDatabaseDriver::MySQLDatabaseDriver() {
 
 	try {
@@ -78,15 +70,40 @@ void MySQLDatabaseInterface::getResults(string query) {
 
 int MySQLDatabaseInterface::login(struct packet &pkt) {
 
-	/*
-	 pkt.contents.username;
-	 pkt.contents.password;
-	 pkt.sessionId;
-	 pkt.contents.rvcd_cnts; //for error return
-	 sessionid max is 4,294,967,295
-	 */
+	try {
+		pstmt = con->prepareStatement(
+				"select * from Users where userName = ? and passwordHash = ?");
+		pstmt->setString(1, pkt.contents.username);
+		pstmt->setString(2, pkt.contents.password);
+		res = pstmt->executeQuery();
 
-	return 0;
+		printResults(res);
+		if (res->rowsCount() > 0) {
+			//username and password exists and is correct
+			delete pstmt;
+			delete res;
+			return 0;
+		} else {
+			//username and password does not exist or is incorrect
+			pkt.contents.rvcd_cnts =
+					"Username and/or password incorrect or does not exist";
+			delete pstmt;
+			delete res;
+			return -1;
+		}
+
+	} catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+
+		return -1;
+	}
+
+	return -1;
 }
 
 int MySQLDatabaseInterface::listUsers(struct packet &pkt) {
@@ -134,18 +151,20 @@ int MySQLDatabaseInterface::hasValidSession(struct packet& pkt) {
 		pstmt->setInt(2, session_timeout);
 		res = pstmt->executeQuery();
 
-		printResults(res);
+		//printResults(res);
 		if (res->rowsCount() > 0) {
 			//valid session
+			delete pstmt;
+			delete res;
 			return 0;
 		} else {
 			//invalid session
 			pkt.contents.rvcd_cnts = "Invalid Session";
+			delete pstmt;
+			delete res;
 			return -1;
 		}
 
-		delete pstmt;
-		delete res;
 	} catch (sql::SQLException &e) {
 		std::cout << "# ERR: SQLException in " << __FILE__;
 		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
@@ -177,4 +196,12 @@ void MySQLDatabaseInterface::printResults(sql::ResultSet* result_set) {
 		std::cout << std::endl;
 	} while (result_set->next());
 	std::cout << std::endl;
+}
+
+Notifications::Notifications(MySQLDatabaseInterface* dbInterface) {
+	databaseInterface = dbInterface;
+}
+
+Notifications::~Notifications() {
+
 }

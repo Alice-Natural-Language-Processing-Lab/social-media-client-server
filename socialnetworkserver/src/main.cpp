@@ -19,15 +19,31 @@
 
 using namespace std;
 
+void test_hasValidSession(MySQLDatabaseInterface& database);
+void test_getResults(MySQLDatabaseInterface& database);
+void test_login(MySQLDatabaseInterface& database);
+
 int main() {
 
-	string query, user_name, timeout;
 	MySQLDatabaseDriver databaseDriver;
 	MySQLDatabaseInterface database(&databaseDriver, SERVER_URL,
 	SERVER_USERNAME,
 	SERVER_PASSWORD, SERVER_DATABASE);
 	Notifications notifications(&database);
 
+	while (true) {
+		//test_getResults(database);
+		//test_hasValidSession(database);
+		test_login(database);
+		getchar();
+	}
+
+	exit(EXIT_SUCCESS);
+}
+
+void test_hasValidSession(MySQLDatabaseInterface& database) {
+
+	string timeout;
 	packet test_packet1, test_packet2;
 	test_packet1.sessionId = 3456789012;
 	test_packet2.sessionId = 2345678901;
@@ -39,11 +55,33 @@ int main() {
 			<< test_packet1.contents.rvcd_cnts << endl;
 	cout << "test packet2:" << database.hasValidSession(test_packet2) << "\n"
 			<< test_packet2.contents.rvcd_cnts << endl;
+}
 
-	while (true) {
-		getline(cin, query);
-		database.getResults(query);
-	}
+void test_getResults(MySQLDatabaseInterface& database) {
 
-	exit(EXIT_SUCCESS);
+	string query;
+
+	getline(cin, query);
+	database.getResults(query);
+}
+
+void test_login(MySQLDatabaseInterface& database) {
+
+	packet test_packet1, test_packet2, test_packet3;
+	test_packet1.contents.username = "frodo";
+	test_packet1.contents.password = "123456789012345";
+	test_packet2.contents.username = "sam";
+	test_packet2.contents.password = "wrongpass";
+	test_packet3.contents.username = "nousername";
+	test_packet3.contents.password = "doesntmatter";
+	//values ('frodo', '123456789012345'), ('sam', '543210987654321');
+	cout << "test_packet1: " << database.login(test_packet1) << endl
+			<< "sessionid: " << test_packet1.sessionId << endl
+			<< "rcvd_contents: " << test_packet1.contents.rvcd_cnts << endl;
+	cout << "test_packet2: " << database.login(test_packet2) << endl
+			<< "sessionid: " << test_packet2.sessionId << endl
+			<< "rcvd_contents: " << test_packet2.contents.rvcd_cnts << endl;
+	cout << "test_packet3: " << database.login(test_packet3) << endl
+			<< "sessionid: " << test_packet3.sessionId << endl
+			<< "rcvd_contents: " << test_packet3.contents.rvcd_cnts << endl;
 }

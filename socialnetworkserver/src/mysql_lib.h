@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <string>
+#include <climits>
 
 #include "mysql_connection.h"
 #include <cppconn/driver.h>
@@ -48,7 +49,8 @@ private:
 	void printResults(sql::ResultSet* result_set);
 
 public:
-	int session_timeout = 10; // in minutes between 0 and 59
+	int session_timeout = 15; // in minutes between 0 and 59
+	unsigned int session_id_max = UINT_MAX;
 
 	MySQLDatabaseInterface(MySQLDatabaseDriver* databaseDriver,
 			string server_url, string server_username, string server_password,
@@ -68,18 +70,25 @@ public:
 	 * -1 if unsuccessful. If unsuccessful, rvcd_cnts will also contain an error message.
 	 */
 
-	//consider having some of these functions return bool instead of ints?
-	int login(struct packet& pkt);
-	int listUsers(struct packet& pkt);
-	int showWall(struct packet& pkt);
-	int postOnWall(struct packet& pkt);
-	int logout(struct packet& pkt);
-
 	int hasValidSession(struct packet& pkt);
 	/*
 	 * This function checks if the session in the packet is valid based on session_timeout,
 	 * returns 0 if valid, otherwise returns -1 and modifies packet to have error message
 	 */
+
+	int login(struct packet& pkt);
+	/*
+	 * Checks if username and password exist in the table. If so, generates
+	 * a valid sessionID and writes that ID to the packet and returns 0.
+	 * If not, writes an error message to received contents and returns -1.
+	 */
+
+	//consider having some of these functions return bool instead of ints?
+
+	int listUsers(struct packet& pkt);
+	int showWall(struct packet& pkt);
+	int postOnWall(struct packet& pkt);
+	int logout(struct packet& pkt);
 };
 
 class Notifications {
