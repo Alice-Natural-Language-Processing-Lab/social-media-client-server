@@ -8,7 +8,7 @@
 #ifndef STRUCTURES_H_
 #define STRUCTURES_H_
 
-using namespace std;
+#include <string>
 
 #define USR_NAME_LEN	25
 #define PW_LEN	20
@@ -38,12 +38,12 @@ struct content {
 };*/
 
 struct content {
-	string username;
-	string password;
-	string postee;
-	string post;
-	string wallOwner;
-	string rvcd_cnts;
+	std::string username;
+	std::string password;
+	std::string postee;
+	std::string post;
+	std::string wallOwner;
+	std::string rvcd_cnts;
 };
 
 /**
