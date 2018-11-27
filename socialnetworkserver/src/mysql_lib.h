@@ -12,6 +12,8 @@
 #include <iostream>
 #include <string>
 #include <climits>
+#include <cstdlib>
+#include <math.h>
 
 #include "mysql_connection.h"
 #include <cppconn/driver.h>

@@ -70,6 +70,8 @@ void MySQLDatabaseInterface::getResults(string query) {
 
 int MySQLDatabaseInterface::login(struct packet &pkt) {
 
+	bool valid_session_id = false;
+	unsigned int temp_session_id;
 	try {
 		pstmt = con->prepareStatement(
 				"select * from Users where userName = ? and passwordHash = ?");
@@ -78,12 +80,8 @@ int MySQLDatabaseInterface::login(struct packet &pkt) {
 		res = pstmt->executeQuery();
 
 		printResults(res);
-		if (res->rowsCount() > 0) {
-			//username and password exists and is correct
-			delete pstmt;
-			delete res;
-			return 0;
-		} else {
+
+		if (res->rowsCount() != 1) {
 			//username and password does not exist or is incorrect
 			pkt.contents.rvcd_cnts =
 					"Username and/or password incorrect or does not exist";
@@ -91,6 +89,35 @@ int MySQLDatabaseInterface::login(struct packet &pkt) {
 			delete res;
 			return -1;
 		}
+		//username and password exists and is correct
+		delete pstmt;
+		delete res;
+
+		while (!valid_session_id) {
+
+			temp_session_id = (unsigned int) round(
+					((float) rand() / RAND_MAX) * session_id_max);
+
+			//this statement doesn't check for existing but invalid session ids. Will eventually run out of session ids
+			pstmt = con->prepareStatement(
+					"select * from InteractionLog where sessionID = ?");
+			pstmt->setUInt(1, temp_session_id);
+			res = pstmt->executeQuery();
+
+			printResults(res);
+
+			if (res->rowsCount() == 0) {
+				//session_id doesn't exists in table, use this session id
+				valid_session_id = true;
+			}
+			delete pstmt;
+			delete res;
+		}
+		//insert row in interaction log (can probably make a function for this)
+		//how to make sure another thread doesn't generate same sessionid and update concurrently?
+		//write session id back to packet and return 0
+
+		return 0;
 
 	} catch (sql::SQLException &e) {
 		std::cout << "# ERR: SQLException in " << __FILE__;
@@ -100,9 +127,11 @@ int MySQLDatabaseInterface::login(struct packet &pkt) {
 		std::cout << " (MySQL error code: " << e.getErrorCode();
 		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
 
+		pkt.contents.rvcd_cnts = "SQL Error";
 		return -1;
 	}
 
+	pkt.contents.rvcd_cnts = "Unknown function error";
 	return -1;
 }
 

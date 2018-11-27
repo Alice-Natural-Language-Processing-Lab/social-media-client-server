@@ -81,3 +81,4 @@ DROP DATABASE `SocialNetwork`;
 /*------------------------------------------------------------*/
 
 
+select * from Users where userName = "frodo" and passwordHash = "123456789012345";
