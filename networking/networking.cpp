@@ -135,31 +135,32 @@ int destroy_socket(int socketfd) {
 }
 
 int write_socket(int socketfd, struct packet &pkt) {
-	int contentLength = pkt.contents.username.length() + pkt.contents.password.length() + pkt.contents.postee.length() + pkt.contents.post.length() + pkt.contents.wallOwner.length() + pkt.contents.rvcd_cnts.length();
+	int contentLength = to_string(pkt.cmd_code).length() + to_string(pkt.req_num).length() + to_string(pkt.sessionId).length() + pkt.contents.username.length() + pkt.contents.password.length() + pkt.contents.postee.length() + pkt.contents.post.length() + pkt.contents.wallOwner.length() + pkt.contents.rvcd_cnts.length();
 	pkt.content_len = (unsigned int) contentLength;
 	pkt.req_num = packetSeqNum;
 	packetSeqNum++;
 	char pktString[MAX_PACKET_LEN];
-	strcpy(pktString, "content_len:");
+	strcpy(pktString, "content_len:");	//12
 	strcat(pktString, to_string(pkt.content_len).c_str());
-	strcat(pktString, ",cmd_code:");
+	strcat(pktString, ",cmd_code:");	//10
 	strcat(pktString, to_string(pkt.cmd_code).c_str());
-	strcat(pktString, ",req_num:");
+	strcat(pktString, ",req_num:");		//9
 	strcat(pktString, to_string(pkt.req_num).c_str());
-	strcat(pktString, ",sessionId:");
+	strcat(pktString, ",sessionId:");	//11
 	strcat(pktString, to_string(pkt.sessionId).c_str());
-	strcat(pktString, ",username:");
+	strcat(pktString, ",username:");	//10
 	strcat(pktString, pkt.contents.username.c_str());
-	strcat(pktString, ",password:");
+	strcat(pktString, ",password:");	//10
 	strcat(pktString, pkt.contents.password.c_str());
-	strcat(pktString, ",postee:");
+	strcat(pktString, ",postee:");		//8
 	strcat(pktString, pkt.contents.postee.c_str());
-	strcat(pktString, ",post:");
+	strcat(pktString, ",post:");		//6
 	strcat(pktString, pkt.contents.post.c_str());
-	strcat(pktString, ",wallOwner:");
+	strcat(pktString, ",wallOwner:");	//11
 	strcat(pktString, pkt.contents.wallOwner.c_str());
-	strcat(pktString, ",rvcd_cnts:");
+	strcat(pktString, ",rvcd_cnts:");	//11
 	strcat(pktString, pkt.contents.rvcd_cnts.c_str());
+	//total is 12+10+9+11+10+10+8+6+11+11 = 98
 
 	//For Debug Purpose
 	printf("stirng: %s\nstringLength: %d\n", pktString, (int)strlen(pktString));
@@ -201,7 +202,8 @@ int read_socket(int socketfd, struct packet &pkt) {
 		startIndex = temp.find("content_len:");
 		endIndex = temp.find(",cmd_code");
 		if(startIndex != -1 && endIndex != -1) {
-			packetLength = 105 + stoi(temp.substr(startIndex + 12, endIndex - startIndex - 12));
+			string contentLengthString = temp.substr(startIndex + 12, endIndex - startIndex - 12);
+			packetLength = 98 + contentLengthString.length() + stoi(contentLengthString);
 		}
 		if (byteRead == 0 || packetLength <= totalRead)
 			break;
@@ -305,11 +307,11 @@ int read_socket(int socketfd, struct packet &pkt) {
 	//printf("wallOwner:%s\n", pkt.contents.wallOwner.c_str());
 
 	startIndex = pktString.find("rvcd_cnts:", endIndex);
-	component = pktString.substr(startIndex + 10);
 	if(startIndex == -1) {
 		fprintf(stderr, "Packer Format Wrong\n");
 		return -1;
 	}
+	component = pktString.substr(startIndex + 10);
 	pkt.contents.rvcd_cnts = component;
 	//printf("rvcd_cnts:%s\n", pkt.contents.rvcd_cnts.c_str());
 
