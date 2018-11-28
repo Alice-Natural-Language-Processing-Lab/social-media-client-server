@@ -61,9 +61,11 @@ values (1, 2, '2018-11-07', "Hello friends, how's it going?"), (2, 2, '2018-11-0
 insert into SocialNetwork.Notifications (postID, userID, `read`, timestamp)
 values (1, 1, 0, '2018-11-07 00:00:00'), (2,2,0,'2018-11-07');
 
+/*
 insert into SocialNetwork.InteractionLog (userID, sessionID, timestamp, logout, socketDescriptor, command)
 values (1, "2345678901", '2018-11-24', 0, 5, "show wall frodo"), (1, "2345678901", '2018-11-24 22:14:00', 0, 5, "post wall frodo Hi there!")
 , (2, "3456789012", '2018-11-24 22:16:00', 0, 6, "show wall sam"), (2, "3456789012", '2018-11-24 22:18:00', 1, 6, "logout") ;
+*/
 
 select * from SocialNetwork.Users;
 select * from SocialNetwork.Posts;

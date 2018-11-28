@@ -54,7 +54,7 @@ void MySQLDatabaseInterface::getResults(string query) {
 		stmt = con->createStatement();
 		res = stmt->executeQuery(query.c_str());
 
-		printResults(res);
+		printResults();
 
 		delete stmt;
 		delete res;
@@ -71,7 +71,9 @@ void MySQLDatabaseInterface::getResults(string query) {
 int MySQLDatabaseInterface::login(struct packet &pkt, int socket_descriptor) {
 
 	bool valid_session_id = false;
-	unsigned int temp_session_id;
+	unsigned int temp_session_id, temp_user_id;
+	srand(time(NULL));
+
 	try {
 		//check for valid username and password
 		pstmt = con->prepareStatement(
@@ -80,7 +82,7 @@ int MySQLDatabaseInterface::login(struct packet &pkt, int socket_descriptor) {
 		pstmt->setString(2, pkt.contents.password);
 		res = pstmt->executeQuery();
 
-		printResults(res);
+		//printResults();
 
 		if (res->rowsCount() != 1) {
 			//username and password does not exist or is incorrect
@@ -91,6 +93,8 @@ int MySQLDatabaseInterface::login(struct packet &pkt, int socket_descriptor) {
 			return -1;
 		}
 		//username and password exists and is correct
+		res->first();
+		temp_user_id = res->getUInt("userID");
 		delete pstmt;
 		delete res;
 
@@ -106,7 +110,7 @@ int MySQLDatabaseInterface::login(struct packet &pkt, int socket_descriptor) {
 			pstmt->setUInt(1, temp_session_id);
 			res = pstmt->executeQuery();
 
-			printResults(res);
+			//printResults();
 
 			if (res->rowsCount() == 0) {
 				//session_id doesn't exist in table, use this session id
@@ -118,11 +122,18 @@ int MySQLDatabaseInterface::login(struct packet &pkt, int socket_descriptor) {
 
 		//insert row in interaction log (can probably make a function for this)
 		//how to make sure another thread doesn't generate same sessionid and update concurrently? - mainly relying on low probability, similar approach is used for session ids in the wild
-		//insert into InteractionLog (userID, sessionID, logout, socketDescriptor, command)
-		//values (1, 23456, 0, 9, "test command");
-		pstmt = con->prepareStatement("insert into InteractionLog (userID, sessionID, logout, socketDescriptor, command)");
+		pstmt =
+				con->prepareStatement(
+						"insert into InteractionLog (userID, sessionID, logout, socketDescriptor, command) values (?, ?, 0, ?, ?)");
+		pstmt->setUInt(1, temp_user_id);
+		pstmt->setUInt(2, temp_session_id);
+		pstmt->setInt(3, socket_descriptor);
+		pstmt->setString(4, "LOGIN " + pkt.contents.username);
+		pstmt->executeUpdate();
+		delete pstmt;
 
 		//write session id back to packet and return 0
+		pkt.sessionId = temp_session_id;
 
 		return 0;
 
@@ -187,7 +198,7 @@ int MySQLDatabaseInterface::hasValidSession(struct packet& pkt) {
 		pstmt->setInt(2, session_timeout);
 		res = pstmt->executeQuery();
 
-		//printResults(res);
+		//printResults();
 		if (res->rowsCount() > 0) {
 			//valid session
 			delete pstmt;
@@ -215,23 +226,24 @@ int MySQLDatabaseInterface::hasValidSession(struct packet& pkt) {
 	return -1;
 }
 
-void MySQLDatabaseInterface::printResults(sql::ResultSet* result_set) {
+void MySQLDatabaseInterface::printResults() {
 
-	int column_count;
-
-	result_set_meta_data = result_set->getMetaData();
+	int column_count, initial_row = res->getRow();
+	res->beforeFirst();
+	result_set_meta_data = res->getMetaData();
 	column_count = result_set_meta_data->getColumnCount();
 	std::cout << "\nResults:\n";
 	do {
 		for (int i = 1; i <= column_count; i++) {
-			if (result_set->isBeforeFirst())
+			if (res->isBeforeFirst())
 				std::cout << "\t" << result_set_meta_data->getColumnName(i);
 			else
-				std::cout << "\t" << result_set->getString(i);
+				std::cout << "\t" << res->getString(i);
 		}
 		std::cout << std::endl;
-	} while (result_set->next());
+	} while (res->next());
 	std::cout << std::endl;
+	res->absolute(initial_row);
 }
 
 Notifications::Notifications(MySQLDatabaseInterface* dbInterface) {

@@ -48,7 +48,7 @@ private:
 	sql::ResultSet* res;
 	sql::ResultSetMetaData* result_set_meta_data;
 
-	void printResults(sql::ResultSet* result_set);
+	void printResults();
 
 public:
 	int session_timeout = 15; // in minutes between 0 and 59

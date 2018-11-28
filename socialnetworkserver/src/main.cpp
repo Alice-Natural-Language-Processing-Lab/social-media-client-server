@@ -38,7 +38,7 @@ int main() {
 		getchar();
 	}
 
-	exit(EXIT_SUCCESS);
+	exit(0);
 }
 
 void test_hasValidSession(MySQLDatabaseInterface& database) {
@@ -76,13 +76,16 @@ void test_login(MySQLDatabaseInterface& database) {
 	test_packet3.contents.username = "nousername";
 	test_packet3.contents.password = "doesntmatter";
 	//values ('frodo', '123456789012345'), ('sam', '543210987654321');
-	cout << "test_packet1: " << database.login(test_packet1, socket_descriptor_test) << endl
-			<< "sessionid: " << test_packet1.sessionId << endl
-			<< "rcvd_contents: " << test_packet1.contents.rvcd_cnts << endl;
-	cout << "test_packet2: " << database.login(test_packet2, socket_descriptor_test) << endl
-			<< "sessionid: " << test_packet2.sessionId << endl
-			<< "rcvd_contents: " << test_packet2.contents.rvcd_cnts << endl;
-	cout << "test_packet3: " << database.login(test_packet3, socket_descriptor_test) << endl
-			<< "sessionid: " << test_packet3.sessionId << endl
-			<< "rcvd_contents: " << test_packet3.contents.rvcd_cnts << endl;
+	database.login(test_packet1, socket_descriptor_test);
+	database.login(test_packet2, socket_descriptor_test);
+	database.login(test_packet3, socket_descriptor_test);
+	cout << "test_packet1:" << endl << "sessionid: " << test_packet1.sessionId
+			<< endl << "rcvd_contents: " << test_packet1.contents.rvcd_cnts
+			<< endl;
+	cout << "test_packet2:" << endl << "sessionid: " << test_packet2.sessionId
+			<< endl << "rcvd_contents: " << test_packet2.contents.rvcd_cnts
+			<< endl;
+	cout << "test_packet3:" << endl << "sessionid: " << test_packet3.sessionId
+			<< endl << "rcvd_contents: " << test_packet3.contents.rvcd_cnts
+			<< endl;
 }
