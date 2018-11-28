@@ -90,3 +90,4 @@ DROP TABLE `SocialNetwork`.`Users`;
 DROP DATABASE `SocialNetwork`;
 
 /*------------------------------------------------------------*/
+

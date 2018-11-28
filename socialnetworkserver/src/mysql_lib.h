@@ -49,6 +49,20 @@ private:
 	sql::ResultSetMetaData* result_set_meta_data;
 
 	void printResults();
+	/*
+	 * Used for testing
+	 * Prints existing resultset in a table format. Can only be called once a
+	 * result set has been generated. Restores the result set state before returning
+	 */
+
+	void insertInteractionLog(std::string user_name, unsigned int session_id,
+			bool logout, int socket_descriptor, std::string command);
+	/*
+	 * Used for updating InteractionLog
+	 * Should only be called after existing statements, prepared statements,
+	 * or result sets have been deleted as this modifies the private prepared statement
+	 * and result set variables. Creates own prepared statements for updating database.
+	 */
 
 public:
 	int session_timeout = 15; // in minutes between 0 and 59
@@ -117,6 +131,15 @@ public:
 	 */
 
 	int postOnWall(struct packet& pkt);
+	/*
+	 * Creates a post on the specified user's wall.
+	 *
+	 * If successful, returns 0 and rcvd_cnts should be ignored
+	 * Otherwise:
+	 * returns -1 if unsuccessful and writes error message to rcvd_cnts
+	 * returns -2 if server error and writes error message to rcvd_cnts
+	 */
+
 	int logout(struct packet& pkt);
 };
 

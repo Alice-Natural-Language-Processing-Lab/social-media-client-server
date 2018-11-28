@@ -44,6 +44,12 @@ void MySQLDatabaseInterface::printResults() {
 	res->absolute(initial_row);
 }
 
+void MySQLDatabaseInterface::insertInteractionLog(std::string user_name,
+		unsigned int session_id, bool logout, int socket_descriptor,
+		std::string command) {
+implementing this function
+}
+
 MySQLDatabaseInterface::MySQLDatabaseInterface(
 		MySQLDatabaseDriver* databaseDriver, std::string server_url,
 		std::string server_username, std::string server_password,
