@@ -86,6 +86,16 @@ public:
 	 */
 
 	int listUsers(struct packet& pkt);
+	/*
+	 * Queries database for list of all users. Writes numbered list of users
+	 * with newlines between users to rcvd_cnts.
+	 * Ex:
+	 * 1. alice
+	 * 2. bob
+	 *
+	 * Returns 0 if successful, or -1 if unsuccessful
+	 */
+
 	int showWall(struct packet& pkt);
 	int postOnWall(struct packet& pkt);
 	int logout(struct packet& pkt);
