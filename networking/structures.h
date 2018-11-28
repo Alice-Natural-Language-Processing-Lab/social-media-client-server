@@ -43,7 +43,7 @@ struct content {
 	std::string postee;
 	std::string post;
 	std::string wallOwner;
-	std::string rvcd_cnts;
+	std::string rcvd_cnts;
 };
 
 /**

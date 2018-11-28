@@ -12,7 +12,7 @@ bool isServer = false;
 int create_server_socket(int portNum) {
 	isServer = true;
 	int socketfd = socket(AF_INET, SOCK_STREAM, 0);
-	
+
 	if(socketfd < 0) {
 		char errorMessage[ERR_LEN];
 		strerror_r(errno, errorMessage, ERR_LEN);
@@ -69,7 +69,7 @@ int create_client_socket(string serverName, int portNum) {
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = 0;
 	hints.ai_flags = 0;
-	
+
 	int error;
 	error = getaddrinfo(serverName.c_str(), portString.c_str(), NULL, &serverInfo);
 	if(error != 0) {
@@ -109,7 +109,7 @@ int create_client_socket(string serverName, int portNum) {
 		fprintf(stderr, "setsockopt(SO_REUSEPORT) failed; Error Message: %s\n", errorMessage);
 		return errno;
 	}
-	
+
 	return socketfd;
 }
 
@@ -137,14 +137,14 @@ int destroy_socket(int socketfd) {
 }
 
 int write_socket(int socketfd, struct packet &pkt) {
-	if((isServer && pkt.cmd_code == NOTIFY) || (!isServer && pkt.cmd_code != ACK && pkt.cmd_code != NOTIFY)) {
+	if((isServer && pkt.cmd_code == NOTIFY) || (!isServer && pkt.cmd_code != ACK && pkt.cmd_code != NOTIFY)) {	//if the packet is a new request, assign a req-num to it
 		pkt.req_num = packetSeqNum;
 		packetSeqNum++;
 	}
 
-	int contentLength = to_string(pkt.cmd_code).length() + to_string(pkt.req_num).length() + to_string(pkt.sessionId).length() + pkt.contents.username.length() + pkt.contents.password.length() + pkt.contents.postee.length() + pkt.contents.post.length() + pkt.contents.wallOwner.length() + pkt.contents.rvcd_cnts.length();
+	int contentLength = to_string(pkt.cmd_code).length() + to_string(pkt.req_num).length() + to_string(pkt.sessionId).length() + pkt.contents.username.length() + pkt.contents.password.length() + pkt.contents.postee.length() + pkt.contents.post.length() + pkt.contents.wallOwner.length() + pkt.contents.rcvd_cnts.length();
 	pkt.content_len = (unsigned int) contentLength;
-	
+
 	char pktString[MAX_PACKET_LEN];
 
 	strcpy(pktString, "content_len:");	//12, the length of fixed format of packet
@@ -165,8 +165,8 @@ int write_socket(int socketfd, struct packet &pkt) {
 	strcat(pktString, pkt.contents.post.c_str());
 	strcat(pktString, ",wallOwner:");	//11
 	strcat(pktString, pkt.contents.wallOwner.c_str());
-	strcat(pktString, ",rvcd_cnts:");	//11
-	strcat(pktString, pkt.contents.rvcd_cnts.c_str());
+	strcat(pktString, ",rcvd_cnts:");	//11
+	strcat(pktString, pkt.contents.rcvd_cnts.c_str());
 	//total is 12+10+9+11+10+10+8+6+11+11 = 98
 
 	//For Debug Purpose
@@ -176,6 +176,7 @@ int write_socket(int socketfd, struct packet &pkt) {
 		char *error = (char *)malloc(sizeof(char) * ERR_LEN);
 		strerror_r(errno, error, ERR_LEN);
 		fprintf(stderr, "Error (read): %s\n", error);
+		free(error);
 		return errno;
 	}
 	return 0;
@@ -191,7 +192,7 @@ int read_socket(int socketfd, struct packet &pkt) {
 	char *bufferHead = buffer;
 	int packetLength = MAX_PACKET_LEN;
 
-	// Read each request stream repeatedly 
+	// Read each request stream repeatedly
 	while (1 == 1)
 	{
 		byteRead = read(socketfd, buffer, packetLength);
@@ -199,6 +200,8 @@ int read_socket(int socketfd, struct packet &pkt) {
 		{
 			strerror_r(errno, error, ERR_LEN);
 			fprintf(stderr, "Error (read): %s\n", error);
+			free(error);
+			free(bufferHead);
 			return errno;
 		}
 		buffer += byteRead;
@@ -217,11 +220,15 @@ int read_socket(int socketfd, struct packet &pkt) {
 	}
 	if(bufferHead == NULL || totalRead == 0) {
 		//fprintf(stderr, "Packet Read is NULL\n");
+		free(error);
+		free(bufferHead);
 		return 0;
 	}
 
 	string pktString(bufferHead);
-	
+	free(error);
+	free(bufferHead);
+
 	startIndex = pktString.find("content_len:");	//first ':'
 	endIndex = pktString.find(",cmd_code:");		//first ','
 	if(startIndex == -1 || endIndex == -1) {
@@ -250,7 +257,7 @@ int read_socket(int socketfd, struct packet &pkt) {
 		return -1;
 	}
 	component = pktString.substr(startIndex + 9, endIndex - startIndex - 9);
-	pkt.req_num = (unsigned int) stoi(component);
+	pkt.req_num = (unsigned int) stoul(component);
 	//printf("req_num:%u\n", pkt.req_num);
 
 	startIndex = pktString.find(",sessionId:", endIndex);
@@ -260,7 +267,7 @@ int read_socket(int socketfd, struct packet &pkt) {
 		return -1;
 	}
 	component = pktString.substr(startIndex + 11, endIndex - startIndex - 11);
-	pkt.sessionId = (unsigned int) stoi(component);
+	pkt.sessionId = (unsigned int) stoul(component);
 	//printf("sessionId:%u\n", pkt.sessionId);
 
 	startIndex = pktString.find(",username:", endIndex);
@@ -270,7 +277,8 @@ int read_socket(int socketfd, struct packet &pkt) {
 		return -1;
 	}
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
-	pkt.contents.username = component;
+	if (component.length() > 0)
+		pkt.contents.username = component;
 	//printf("username:%s\n", pkt.contents.username.c_str());
 
 	startIndex = pktString.find(",password:", endIndex);
@@ -280,7 +288,8 @@ int read_socket(int socketfd, struct packet &pkt) {
 		return -1;
 	}
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
-	pkt.contents.password = component;
+	if (component.length() > 0)
+		pkt.contents.password = component;
 	//printf("password:%s\n", pkt.contents.password.c_str());
 
 	startIndex = pktString.find(",postee:", endIndex);
@@ -290,7 +299,8 @@ int read_socket(int socketfd, struct packet &pkt) {
 		return -1;
 	}
 	component = pktString.substr(startIndex + 8, endIndex - startIndex - 8);
-	pkt.contents.postee = component;
+	if (component.length() > 0)
+		pkt.contents.postee = component;
 	//printf("postee:%s\n", pkt.contents.postee.c_str());
 
 	startIndex = pktString.find(",post:", endIndex);
@@ -300,27 +310,30 @@ int read_socket(int socketfd, struct packet &pkt) {
 		return -1;
 	}
 	component = pktString.substr(startIndex + 6, endIndex - startIndex - 6);
-	pkt.contents.post = component;
+	if (component.length() > 0)
+		pkt.contents.post = component;
 	//printf("post:%s\n", pkt.contents.post.c_str());
 
 	startIndex = pktString.find(",wallOwner:", endIndex);
-	endIndex = pktString.find(",rvcd_cnts:", startIndex);
+	endIndex = pktString.find(",rcvd_cnts:", startIndex);
 	if(startIndex == -1 || endIndex == -1) {
 		fprintf(stderr, "Packer Format Wrong\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 11, endIndex - startIndex - 11);
-	pkt.contents.wallOwner = component;
+	if (component.length() > 0)
+		pkt.contents.wallOwner = component;
 	//printf("wallOwner:%s\n", pkt.contents.wallOwner.c_str());
 
-	startIndex = pktString.find(",rvcd_cnts:", endIndex);
+	startIndex = pktString.find(",rcvd_cnts:", endIndex);
 	if(startIndex == -1) {
 		fprintf(stderr, "Packer Format Wrong\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 11, packetLength - startIndex - 11);
-	pkt.contents.rvcd_cnts = component;
-	//printf("rvcd_cnts:%s\n", pkt.contents.rvcd_cnts.c_str());
-
+	if (component.length() > 0)
+		pkt.contents.rcvd_cnts = component;
+	//printf("rcvd_cnts:%s\n", pkt.contents.rcvd_cnts.c_str());
+	
 	return totalRead;
 }
