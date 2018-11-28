@@ -7,8 +7,10 @@
 #include "networking.h"
 
 unsigned int packetSeqNum = 0;
+bool isServer = false;
 
 int create_server_socket(int portNum) {
+	isServer = true;
 	int socketfd = socket(AF_INET, SOCK_STREAM, 0);
 	
 	if(socketfd < 0) {
@@ -135,12 +137,17 @@ int destroy_socket(int socketfd) {
 }
 
 int write_socket(int socketfd, struct packet &pkt) {
+	if((isServer && pkt.cmd_code == NOTIFY) || (!isServer && pkt.cmd_code != ACK && pkt.cmd_code != NOTIFY)) {
+		pkt.req_num = packetSeqNum;
+		packetSeqNum++;
+	}
+
 	int contentLength = to_string(pkt.cmd_code).length() + to_string(pkt.req_num).length() + to_string(pkt.sessionId).length() + pkt.contents.username.length() + pkt.contents.password.length() + pkt.contents.postee.length() + pkt.contents.post.length() + pkt.contents.wallOwner.length() + pkt.contents.rvcd_cnts.length();
 	pkt.content_len = (unsigned int) contentLength;
-	pkt.req_num = packetSeqNum;
-	packetSeqNum++;
+	
 	char pktString[MAX_PACKET_LEN];
-	strcpy(pktString, "content_len:");	//12
+
+	strcpy(pktString, "content_len:");	//12, the length of fixed format of packet
 	strcat(pktString, to_string(pkt.content_len).c_str());
 	strcat(pktString, ",cmd_code:");	//10
 	strcat(pktString, to_string(pkt.cmd_code).c_str());
@@ -216,7 +223,7 @@ int read_socket(int socketfd, struct packet &pkt) {
 	string pktString(bufferHead);
 	
 	startIndex = pktString.find("content_len:");	//first ':'
-	endIndex = pktString.find(",cmd_code");		//first ','
+	endIndex = pktString.find(",cmd_code:");		//first ','
 	if(startIndex == -1 || endIndex == -1) {
 		fprintf(stderr, "Packer Format Wrong\n");
 		return -1;
@@ -226,92 +233,92 @@ int read_socket(int socketfd, struct packet &pkt) {
 	//prints are for debug purposes
 	//printf("content_len:%u\n", pkt.content_len);
 
-	startIndex = pktString.find("cmd_code:", endIndex);	//next component start
-	endIndex = pktString.find(",req_num", startIndex);	//next component end
+	startIndex = pktString.find(",cmd_code:", endIndex);	//next component start
+	endIndex = pktString.find(",req_num:", startIndex);	//next component end
+	if(startIndex == -1 || endIndex == -1) {
+		fprintf(stderr, "Packer Format Wrong\n");
+		return -1;
+	}
+	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
+	pkt.cmd_code = static_cast<commands>(stoi(component));
+	//printf("cmd_code:%d\n", pkt.cmd_code);
+
+	startIndex = pktString.find(",req_num:", endIndex);
+	endIndex = pktString.find(",sessionId:", startIndex);
 	if(startIndex == -1 || endIndex == -1) {
 		fprintf(stderr, "Packer Format Wrong\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 9, endIndex - startIndex - 9);
-	pkt.cmd_code = static_cast<commands>(stoi(component));
-	//printf("cmd_code:%d\n", pkt.cmd_code);
+	pkt.req_num = (unsigned int) stoi(component);
+	//printf("req_num:%u\n", pkt.req_num);
 
-	startIndex = pktString.find("req_num:", endIndex);
-	endIndex = pktString.find(",sessionId", startIndex);
+	startIndex = pktString.find(",sessionId:", endIndex);
+	endIndex = pktString.find(",username:", startIndex);
+	if(startIndex == -1 || endIndex == -1) {
+		fprintf(stderr, "Packer Format Wrong\n");
+		return -1;
+	}
+	component = pktString.substr(startIndex + 11, endIndex - startIndex - 11);
+	pkt.sessionId = (unsigned int) stoi(component);
+	//printf("sessionId:%u\n", pkt.sessionId);
+
+	startIndex = pktString.find(",username:", endIndex);
+	endIndex = pktString.find(",password:", startIndex);
+	if(startIndex == -1 || endIndex == -1) {
+		fprintf(stderr, "Packer Format Wrong\n");
+		return -1;
+	}
+	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
+	pkt.contents.username = component;
+	//printf("username:%s\n", pkt.contents.username.c_str());
+
+	startIndex = pktString.find(",password:", endIndex);
+	endIndex = pktString.find(",postee:", startIndex);
+	if(startIndex == -1 || endIndex == -1) {
+		fprintf(stderr, "Packer Format Wrong\n");
+		return -1;
+	}
+	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
+	pkt.contents.password = component;
+	//printf("password:%s\n", pkt.contents.password.c_str());
+
+	startIndex = pktString.find(",postee:", endIndex);
+	endIndex = pktString.find(",post:", startIndex);
 	if(startIndex == -1 || endIndex == -1) {
 		fprintf(stderr, "Packer Format Wrong\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 8, endIndex - startIndex - 8);
-	pkt.req_num = (unsigned int) stoi(component);
-	//printf("req_num:%u\n", pkt.req_num);
-
-	startIndex = pktString.find("sessionId:", endIndex);
-	endIndex = pktString.find(",username", startIndex);
-	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packer Format Wrong\n");
-		return -1;
-	}
-	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
-	pkt.sessionId = (unsigned int) stoi(component);
-	//printf("sessionId:%u\n", pkt.sessionId);
-
-	startIndex = pktString.find("username:", endIndex);
-	endIndex = pktString.find(",password", startIndex);
-	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packer Format Wrong\n");
-		return -1;
-	}
-	component = pktString.substr(startIndex + 9, endIndex - startIndex - 9);
-	pkt.contents.username = component;
-	//printf("username:%s\n", pkt.contents.username.c_str());
-
-	startIndex = pktString.find("password:", endIndex);
-	endIndex = pktString.find(",postee", startIndex);
-	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packer Format Wrong\n");
-		return -1;
-	}
-	component = pktString.substr(startIndex + 9, endIndex - startIndex - 9);
-	pkt.contents.password = component;
-	//printf("password:%s\n", pkt.contents.password.c_str());
-
-	startIndex = pktString.find("postee:", endIndex);
-	endIndex = pktString.find(",post", startIndex);
-	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packer Format Wrong\n");
-		return -1;
-	}
-	component = pktString.substr(startIndex + 7, endIndex - startIndex - 7);
 	pkt.contents.postee = component;
 	//printf("postee:%s\n", pkt.contents.postee.c_str());
 
-	startIndex = pktString.find("post:", endIndex);
-	endIndex = pktString.find(",wallOwner", startIndex);
+	startIndex = pktString.find(",post:", endIndex);
+	endIndex = pktString.find(",wallOwner:", startIndex);
 	if(startIndex == -1 || endIndex == -1) {
 		fprintf(stderr, "Packer Format Wrong\n");
 		return -1;
 	}
-	component = pktString.substr(startIndex + 5, endIndex - startIndex - 5);
+	component = pktString.substr(startIndex + 6, endIndex - startIndex - 6);
 	pkt.contents.post = component;
 	//printf("post:%s\n", pkt.contents.post.c_str());
 
-	startIndex = pktString.find("wallOwner:", endIndex);
-	endIndex = pktString.find(",rvcd_cnts", startIndex);
+	startIndex = pktString.find(",wallOwner:", endIndex);
+	endIndex = pktString.find(",rvcd_cnts:", startIndex);
 	if(startIndex == -1 || endIndex == -1) {
 		fprintf(stderr, "Packer Format Wrong\n");
 		return -1;
 	}
-	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
+	component = pktString.substr(startIndex + 11, endIndex - startIndex - 11);
 	pkt.contents.wallOwner = component;
 	//printf("wallOwner:%s\n", pkt.contents.wallOwner.c_str());
 
-	startIndex = pktString.find("rvcd_cnts:", endIndex);
+	startIndex = pktString.find(",rvcd_cnts:", endIndex);
 	if(startIndex == -1) {
 		fprintf(stderr, "Packer Format Wrong\n");
 		return -1;
 	}
-	component = pktString.substr(startIndex + 10);
+	component = pktString.substr(startIndex + 11, packetLength - startIndex - 11);
 	pkt.contents.rvcd_cnts = component;
 	//printf("rvcd_cnts:%s\n", pkt.contents.rvcd_cnts.c_str());
 
