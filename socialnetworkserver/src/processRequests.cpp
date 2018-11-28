@@ -11,19 +11,10 @@ extern MySQLDatabaseInterface database;
 
 extern pthread_cond_t notify_cond;
 extern pthread_mutex_t notify_mutex;
+extern int notify_variable;
 
 using namespace std;
-#define DEBUG printf
-
-int processRequest(int sock_fd, struct packet *req);
-void userLogin(int sock_fd, struct packet req);
-void userLogout(int sock_fd, struct packet req);
-void listAllUsers(int sock_fd, struct packet req);
-void postMessage(int sock_fd, struct packet req);
-void showWallMessage(int sock_fd, struct packet req);
-int sendPacket(int sock_fd, struct packet *req, string value1);
-int sendPacket(int sock_fd, struct packet *req, unsigned int value1);
-int sendPacket(int sock_fd, struct packet &resp);
+#define DEBUG
 
 unsigned int sessionID;
 
@@ -61,46 +52,22 @@ int processRequest(int sock_fd, struct packet *req)
 void userLogin(int sock_fd, struct packet req)
 {
 	int ret;
-	sessionID = 101;
 
-	/* TODO: User login to DB
-	 * generate session id*/
-	DEBUG("user name is :");
-	cout<<req.contents.username<<endl;
-	DEBUG("password is :");
-	cout<<req.contents.password<<endl;
-
-	ret = database.login(req);
-	if (ret < 0)
+	ret = database.login(req, sock_fd);
+	sendPacket(sock_fd, req);
+	if (ret == -2)
 	{
-		printf("Error (login): Login to database failed\n");
+		printf("Error (login): DB login error\nClosing Client Connection\n");
+		destroy_socket(sock_fd);
+		pthread_exit(NULL);
 		return;
 	}
-	sendPacket(sock_fd, &req, sessionID);
 	/*
 	pthread_mutex_lock(&notify_mutex);
+	notify_variable = 1;
 	pthread_cond_signal(&notify_cond);
 	pthread_mutex_unlock(&notify_mutex);
 	*/
-	return;
-}
-
-/*
- * userLogout() - logout request for user
- * req: request structure
- */
-void userLogout(int sock_fd, struct packet req)
-{
-	int ret;
-
-	/* TODO: User logout from DB*/
-	DEBUG("Terminating client connection\n");
-	ret = database.logout(req);
-	if (ret < 0)
-	{
-		printf("Error (logout): User logging out from database failed\n");
-		return;
-	}
 	return;
 }
 
@@ -112,15 +79,15 @@ void listAllUsers(int sock_fd, struct packet req)
 {
 	int ret;
 
-	/* TODO: List all users from DB*/
-	//string userlist = "a,b,c,d,e,f";
 	ret = database.listUsers(req);
-	if (ret < 0)
+	sendPacket(sock_fd, req);
+	if (ret == -2)
 	{
-		printf("Error (listUsers): Fetching user list from database failed\n");
+		printf("Error (listUsers): DB listUsers error\nClosing Client Connection");
+		destroy_socket(sock_fd);
+		pthread_exit(NULL);
 		return;
 	}
-	sendPacket(sock_fd, req);
 	return;
 }
 
@@ -132,114 +99,80 @@ void postMessage(int sock_fd, struct packet req)
 {
 	int ret;
 
-	/* TODO: Post to a wall */
-	DEBUG("postee is %s\n", req.contents.postee);
-	DEBUG("post is %s\n", req.contents.post);
+	DEBUG("postee is %s\n", req.contents.postee.c_str());
+	DEBUG("post is %s\n", req.contents.post.c_str());
 	ret = database.postOnWall(req);
 	if (ret < 0)
 	{
 		printf("Error (postOnWall): post to database wall failed\n");
+		sendPacket(sock_fd, req);
 		return;
 	}
 	/*
 	pthread_mutex_lock(&notify_mutex);
+	notify_variable = 1;
 	pthread_cond_signal(&notify_cond);
 	pthread_mutex_unlock(&notify_mutex);
 	*/
-
 	return;
 }
 
+/*
+ * showWallMessage() - show a user's wall
+ * req: request structure
+ */
 void showWallMessage(int sock_fd, struct packet req)
 {
 	int ret;
 
-	/* TODO: send the wall */
-	DEBUG("show %s's wall\n", req.contents.wallOwner);
-	//string wall = "hi \nhello \nhow are you";
+	DEBUG("show %s's wall\n", req.contents.wallOwner.c_str());
 	ret = database.showWall(req);
-	if (ret < 0)
+	sendPacket(sock_fd, req);
+	if (ret == -2)
 	{
-		printf("Error (showWall): Fetching wall from database failed\n");
+		printf("Error (showWall): DB show Wall error\nClosing Client Connection\n");
+		destroy_socket(sock_fd);
+		pthread_exit(NULL);
 		return;
 	}
-	sendPacket(sock_fd, req);
 	return;
 }
 
-int sendPacket(int sock_fd, struct packet *req, string value1)
+/*
+ * userLogout() - logout request for user
+ * req: request structure
+ */
+void userLogout(int sock_fd, struct packet req)
 {
-    struct packet resp;
-    int send_bytes;
+	int ret;
 
-    resp.cmd_code = req->cmd_code;
-    resp.sessionId = req->sessionId;
-    switch(resp.cmd_code)
-    {
-    case LIST:
-    	strcpy(resp.contents.rvcd_cnts, value1.c_str());
-    	//pkt.contents.rvcd_cnts = value1;
-    	break;
-    case SHOW:
-    	strcpy(resp.contents.rvcd_cnts, value1.c_str());
-    	//pkt.contents.rvcd_cnts = value1;
-    	break;
-    default:
-    	printf("Invalid Command Code\n");
-    	return -1;
-    }
-    resp.req_num = req->req_num;
-    resp.content_len = strlen(resp.contents.rvcd_cnts);
-
-    send_bytes = write(sock_fd, &resp, sizeof(resp));
-    if (send_bytes < 0)
-    {
-        perror("Write error\n");
-        return -1;
-    }
-    cout<<send_bytes<<" bytes sent\n";
-    return 0;
+	DEBUG("Terminating client connection\n");
+	ret = database.logout(req);
+	if (ret < 0)
+	{
+		printf("Error (logout): User logging out from database failed\n");
+		return;
+	}
+	destroy_socket(sock_fd);
+	pthread_exit(NULL);
+	return;
 }
 
-int sendPacket(int sock_fd, struct packet *req, unsigned int value1)
-{
-    struct packet resp;
-    int send_bytes;
-
-    resp.cmd_code = req->cmd_code;
-    switch(resp.cmd_code)
-    {
-    case LOGIN:
-    	resp.sessionId = value1;
-    	break;
-    default:
-    	printf("Invalid Command Code\n");
-    	return -1;
-    }
-    resp.req_num = req->req_num;
-    resp.content_len = strlen(resp.contents.rvcd_cnts);
-
-    send_bytes = write(sock_fd, &resp, sizeof(resp));
-    if (send_bytes < 0)
-    {
-        perror("Write error\n");
-        return -1;
-    }
-    cout<<send_bytes<<" bytes sent\n";
-    return 0;
-}
-
+/*
+ * sendPacket() - send the response to client
+ * resp: response packet
+ * returns 0 if success -1 if error
+ */
 int sendPacket(int sock_fd, struct packet &resp)
 {
 	int send_bytes;
 
-	send_bytes = write(sock_fd, &resp, sizeof(resp));
+	send_bytes = write_socket(sock_fd, resp);
 	if (send_bytes < 0)
 	{
-		perror("Write error\n");
+		printf("Error (write_socket)\n");
 		return -1;
 	}
-	cout<<send_bytes<<" bytes sent\n";
+	DEBUG("%d bytes sent\n", send_bytes);
 	return 0;
-
 }
