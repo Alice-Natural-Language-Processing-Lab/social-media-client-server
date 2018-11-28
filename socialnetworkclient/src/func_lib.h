@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <string.h>
+#include <string>
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
@@ -23,6 +24,7 @@
 #include <pthread.h>
 #include "structures.h"
 
+using namespace std;
 
 static const char * commandList[] = { "LOGIN", "LOGOUT", "POST", "SHOW", "LIST", "NOTIFY", "ACK" };
 
@@ -33,7 +35,7 @@ int getAddrInfo(string host, string port, struct addrinfo **serv_info);
 
 void readThread(int sock_fd);
 int sendPacket(int sock_fd, enum commands cmd_code, string key, string value);
-void listUsers(int sock_fd);
+void list(int sock_fd);
 void printCmdList();
 void post(int sock_fd);
 void show(int sock_fd);
@@ -43,7 +45,7 @@ void createPostPacket(string postee, string post, struct packet &pkt);
 void createShowPacket(string wallOwner, struct packet &pkt);
 
 void writeThread(int sock_fd);
-void readResponse(int sock_fd, char *buffer, int req_len);
+int readResponse(int sock_fd, char *buffer, int req_len);
 int parsePacket(struct packet *req);
 void displayContents(struct packet *resp);
 int processResponse(int sock_fd, struct packet *resp);
