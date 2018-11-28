@@ -24,6 +24,7 @@ using namespace std;
 void test_hasValidSession(MySQLDatabaseInterface& database);
 void test_getResults(MySQLDatabaseInterface& database);
 void test_login(MySQLDatabaseInterface& database);
+void test_listUsers(MySQLDatabaseInterface& database);
 size_t hash_func(string input);
 
 int main() {
@@ -39,7 +40,8 @@ int main() {
 	while (true) {
 		//test_getResults(database);
 		//test_hasValidSession(database);
-		test_login(database);
+		//test_login(database);
+		test_listUsers(database);
 		getchar();
 		//getline(cin, input);
 		//cout << hash_func(input);
@@ -95,6 +97,14 @@ void test_login(MySQLDatabaseInterface& database) {
 	cout << "test_packet3:" << endl << "sessionid: " << test_packet3.sessionId
 			<< endl << "rcvd_contents: " << test_packet3.contents.rvcd_cnts
 			<< endl;
+}
+
+void test_listUsers(MySQLDatabaseInterface& database) {
+
+	packet test_packet1;
+
+	database.listUsers(test_packet1);
+	cout << "test_packet1:\n" << test_packet1.contents.rvcd_cnts << endl;
 }
 
 size_t hash_func(string input) {

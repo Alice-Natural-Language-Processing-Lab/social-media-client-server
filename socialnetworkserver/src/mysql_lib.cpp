@@ -155,13 +155,37 @@ int MySQLDatabaseInterface::login(struct packet &pkt, int socket_descriptor) {
 
 int MySQLDatabaseInterface::listUsers(struct packet &pkt) {
 
-	/*
-	 pkt.sessionId;
-	 pkt.contents.username;
-	 pkt.contents.rvcd_cnts; //numbered list with newlines between | for errors set error number and pass error string
-	 */
+	string temp;
+	try {
+		stmt = con->createStatement();
+		res = stmt->executeQuery("select userName from Users");
 
-	return 0;
+		//printResults();
+
+		while (res->next()) {
+			temp += to_string(res->getRow()) + " - "
+					+ res->getString("userName") + "\n";
+		}
+
+		pkt.contents.rvcd_cnts = temp;
+
+		delete stmt;
+		delete res;
+
+		return 0;
+
+	} catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+
+		return -1;
+	}
+
+	return -1;
 }
 
 int MySQLDatabaseInterface::showWall(struct packet &pkt) {
