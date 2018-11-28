@@ -78,7 +78,7 @@ void test_getResults(MySQLDatabaseInterface& database) {
 
 void test_login(MySQLDatabaseInterface& database) {
 
-	int socket_descriptor_test = 5;
+	unsigned int socket_descriptor_test = 5;
 	packet test_packet1, test_packet2, test_packet3;
 	test_packet1.contents.username = "frodo";
 	test_packet1.contents.password = "baggins";

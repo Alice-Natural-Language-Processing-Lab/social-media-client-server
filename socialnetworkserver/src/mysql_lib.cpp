@@ -44,10 +44,40 @@ void MySQLDatabaseInterface::printResults() {
 	res->absolute(initial_row);
 }
 
-void MySQLDatabaseInterface::insertInteractionLog(std::string user_name,
-		unsigned int session_id, bool logout, int socket_descriptor,
+int MySQLDatabaseInterface::insertInteractionLog(unsigned int user_id,
+		unsigned int session_id, bool logout, unsigned int socket_descriptor,
 		std::string command) {
-implementing this function
+
+	implementing this function
+	try {
+		pstmt =
+				con->prepareStatement(
+						"insert into InteractionLog (userID, sessionID, logout, socketDescriptor, command) values (?, ?, ?, ?, ?)");
+		pstmt->setUInt(1, user_id);
+		pstmt->setUInt(2, session_id);
+		pstmt->setBoolean(3, logout);
+		pstmt->setUInt(4, socket_descriptor);
+		pstmt->setString(5, command);
+
+		if (pstmt->executeUpdate() != 1) {
+			//more or less than 1 row was affected
+			delete pstmt;
+			return -2;
+		}
+
+		delete pstmt;
+		return 0;
+
+	} catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+
+		return -2;
+	}
 }
 
 MySQLDatabaseInterface::MySQLDatabaseInterface(
@@ -142,7 +172,8 @@ int MySQLDatabaseInterface::hasValidSession(struct packet& pkt) {
 	return -2;
 }
 
-int MySQLDatabaseInterface::login(struct packet &pkt, int socket_descriptor) {
+int MySQLDatabaseInterface::login(struct packet &pkt,
+		unsigned int socket_descriptor) {
 
 	bool valid_session_id = false;
 	unsigned int temp_session_id, temp_user_id;
@@ -201,7 +232,7 @@ int MySQLDatabaseInterface::login(struct packet &pkt, int socket_descriptor) {
 						"insert into InteractionLog (userID, sessionID, logout, socketDescriptor, command) values (?, ?, 0, ?, ?)");
 		pstmt->setUInt(1, temp_user_id);
 		pstmt->setUInt(2, temp_session_id);
-		pstmt->setInt(3, socket_descriptor);
+		pstmt->setUInt(3, socket_descriptor);
 		pstmt->setString(4, "LOGIN " + pkt.contents.username);
 		pstmt->executeUpdate();
 		delete pstmt;

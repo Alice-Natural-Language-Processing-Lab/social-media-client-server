@@ -44,7 +44,7 @@ CREATE TABLE `SocialNetwork`.`InteractionLog` (
   `sessionID` int unsigned,
   `timestamp` datetime NOT NULL DEFAULT NOW(),
   `logout` boolean NOT NULL,
-  `socketDescriptor` smallint(5) NOT NULL,
+  `socketDescriptor` smallint(5) unsigned NOT NULL,
   `command` varchar(25) NOT NULL,
   PRIMARY KEY (`interactionID`),
   UNIQUE KEY `interactionID_UNIQUE` (`interactionID`),

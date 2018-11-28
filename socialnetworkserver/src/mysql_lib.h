@@ -55,13 +55,15 @@ private:
 	 * result set has been generated. Restores the result set state before returning
 	 */
 
-	void insertInteractionLog(std::string user_name, unsigned int session_id,
-			bool logout, int socket_descriptor, std::string command);
+	int insertInteractionLog(unsigned int user_id, unsigned int session_id,
+			bool logout, unsigned int socket_descriptor, std::string command);
 	/*
 	 * Used for updating InteractionLog
 	 * Should only be called after existing statements, prepared statements,
 	 * or result sets have been deleted as this modifies the private prepared statement
 	 * and result set variables. Creates own prepared statements for updating database.
+	 *
+	 * Returns 0 if successful, returns -2 if unintended SQL behavior/server error
 	 */
 
 public:
@@ -95,7 +97,7 @@ public:
 	 * -2 for server error and modifies packet to have error message
 	 */
 
-	int login(struct packet& pkt, int socket_descriptor);
+	int login(struct packet& pkt, unsigned int socket_descriptor);
 	/*
 	 * Checks if username and password exist in the table. If so, generates
 	 * a valid sessionID and writes that ID to the packet and returns 0.
