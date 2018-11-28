@@ -6,7 +6,10 @@
  */
 #include <time.h>
 #include "func_lib.h"
+#include "mysql_lib.h"
 #include "structures.h"
+
+extern MySQLDatabaseInterface database;
 
 using namespace std;
 
@@ -19,14 +22,9 @@ const char * getCommand(int enumVal)
 }
 
 void handleClient(int sock_fd);
-void readRequest(int sock_fd, char *buffer, int req_len);
+int readRequest(int sock_fd, char *buffer, int req_len);
 int parsePacket(struct packet *req);
 int sessionValidity(struct packet *req);
-int permissionValidity(struct packet *req, int valid);
-
-/*
- * client initial setup
- */
 
 /*
  * handleClient() - handle each client connection
@@ -35,47 +33,52 @@ int permissionValidity(struct packet *req, int valid);
 void handleClient(int sock_fd)
 {
 	int sock_read, sock_write, sock_close;
-	struct packet *req = (struct packet *)malloc(sizeof(struct packet));
+	struct packet req;
 	char *error = (char *)malloc(sizeof(char) * ERR_LEN);
 	int threadId = pthread_self();
-	char *buffer = (char *)req;
 	int req_len, ret;
 	time_t now;
 
 	/* Accept the request persistently*/
 	while(1)
 	{
-		memset(req, 0, sizeof(struct packet));
+		memset(&req, 0, sizeof(struct packet));
 		req_len = sizeof(struct packet);
 
 		/* Read client request */
-		readRequest(sock_fd, buffer, req_len);
-		if(!strlen(buffer))
+		sock_read = read_socket(sock_fd, req);
+		if(sock_read < 0)
+		{
+			printf("Error(read_socket)\n");
+			break;
+		}
+		if (!sock_read)
 			break;
 
 		/* Parse the packet for valid packet structure */
-		ret = parsePacket(req);
+		ret = parsePacket(&req);
 		if (ret < 0)
 		{
 			printf("Error (parsePacket): Packet parsing/checking failed\n");
 			terminateClient(sock_fd);
 		}
 		now = time(NULL);
-		DEBUG("%s: Request received:\n", strtok(ctime(&now), "\n"));
-		DEBUG("%d | %s | %d | %d\n", req->content_len, getCommand(req->cmd_code), req->req_num, req->sessionId);
+		DEBUG("Request received:\n");
+		DEBUG("[%s]: %d | %s | %d | %u\n", strtok(ctime(&now), "\n"), req.content_len, getCommand(req.cmd_code), req.req_num, req.sessionId);
 
 		/* Validate session of the client */
-		ret = sessionValidity(req);
+		ret = sessionValidity(&req);
 		if (ret < 0) /* session validity could not be established */
 		{
 			printf("Error (sessionValidity): session validity could not be established\n");
 			/* TODO : SEND WARNING MESSAGE TO CLIENT "NOT LOGGED IN/SESSION EXPIRED" */
+			sendPacket(sock_fd, req);
 			terminateClient(sock_fd);
 			return;
 		}
 
 		/* process the request with appropriate permissions */
-		ret = processRequest(sock_fd, req);
+		ret = processRequest(sock_fd, &req);
 		if (ret < 0)
 		{
 			printf("Error (processRequest): request processing failed\n");
@@ -96,7 +99,7 @@ void handleClient(int sock_fd)
  * buffer: starting point of request structure
  * req_len: length of request structure
  */
-void readRequest(int sock_fd, char *buffer, int req_len)
+int readRequest(int sock_fd, char *buffer, int req_len)
 {
 	int sock_read;
 	char *error = (char *)malloc(sizeof(char) * ERR_LEN);
@@ -109,7 +112,7 @@ void readRequest(int sock_fd, char *buffer, int req_len)
 		{
 			strerror_r(errno, error, ERR_LEN);
 			printf("Error (read): %s\n", error);
-			return;
+			return -1;
 		}
 		buffer += sock_read;
 		req_len	-= sock_read;
@@ -118,7 +121,7 @@ void readRequest(int sock_fd, char *buffer, int req_len)
 			break;
 	}
 	cout<<sock_read<<" bytes read\n";
-	return;
+	return sock_read;
 }
 
 /*
@@ -129,7 +132,6 @@ void readRequest(int sock_fd, char *buffer, int req_len)
 int parsePacket(struct packet *req)
 {
 	DEBUG("Parsing Packet\n");
-	/* TODO : Complete the function */
 	switch (req->cmd_code)
 	{
 	case LOGIN:
@@ -163,11 +165,11 @@ int sessionValidity(struct packet *req)
 	DEBUG("Checking session validity\n");
 	/* TODO : Complete the function */
 	int ret = 0;
-	int valid = 0;
 	/* check session validity and modify variable valid*/
-
-	/* Validate permissions of the client */
-
+	if (req->cmd_code != LOGIN)
+	{
+		ret = database.hasValidSession(*req);
+	}
 	return ret;
 }
 

@@ -5,21 +5,32 @@
  *      Author: pournami
  */
 #include <pthread.h>
+#include "func_lib.h"
+#include  "mysql_lib.h"
 
 extern pthread_cond_t notify_cond;
 extern pthread_mutex_t notify_mutex;
+extern MySQLDatabaseInterface database;
+
+#define DEBUG	printf
+int notify_variable;
 
 void processNotification()
 {
+	DEBUG("Notification Thread created\n");
 	/*
 	int sock_fd, read, sock_write;
-	Notification notificiation;
+	Notifications notificiation(&database);
 	struct packet notify;
 	pthread_mutex_lock(&notify_mutex);
 
 	while (1)
 	{
-		pthread_cond_wait(&notify_cond, &notify_mutex);
+		while (!notify_variable)
+		{
+			pthread_cond_wait(&notify_cond, &notify_mutex);
+		}
+		notify_variable = 0;
 		notification = getNotifications();
 		while (notification.next())
 		{

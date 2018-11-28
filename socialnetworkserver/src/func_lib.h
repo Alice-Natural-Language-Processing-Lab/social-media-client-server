@@ -41,7 +41,7 @@ void terminateClient(int slave_fd);
 
 /* processClient.cpp */
 void handleClient(int sock_fd);
-void readRequest(int sock_fd, char *buffer, int req_len);
+int readRequest(int sock_fd, char *buffer, int req_len);
 int parsePacket(struct packet *req);
 int sessionValidity(struct packet *req);
 
@@ -54,6 +54,7 @@ void postMessage(int sock_fd, struct packet *req);
 void showWallMessage(int sock_fd, struct packet *req);
 int sendPacket(int sock_fd, struct packet *req, string value1);
 int sendPacket(int sock_fd, struct packet *req, unsigned int value1);
+int sendPacket(int sock_fd, struct packet &resp);
 
 
 void processNotification();
