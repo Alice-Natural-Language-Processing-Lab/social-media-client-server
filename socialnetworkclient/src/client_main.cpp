@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <tr1/functional>
 #include <string.h>
+#include <string>
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
@@ -20,7 +21,6 @@ using namespace std;
 #define DEBUG	printf
 #define ERR_LEN			256
 
-//FILE *logfile;
 string username;
 unsigned int sessionID;
 time_t now;
@@ -42,7 +42,6 @@ int main(int argc, char *argv[])
 	int serverport = 5354;
 	int ret = 0;
 
-	//logfile = fopen("./out.txt", "w");
 	switch (argc)
 	{
 	case 1:
@@ -63,7 +62,6 @@ int main(int argc, char *argv[])
 	{
 		printf("Error (processClient): Client processing failed\n");
 		now = time(NULL);
-		//fprintf(logfile, "%s: Error (processClient): Client processing failed\n", strtok(ctime(&now), "\n"));
 		return -1;
 	}
 	return 0;
@@ -84,6 +82,8 @@ int enterLoginMode(string servername, int serverport)
    	    cout<<"Enter an Option (1 or 2)"<<endl;
         cout<<"1. Login\n2. Exit"<<endl;
         getline(std::cin, input);
+        if (!input.length())
+        	break;
         option = atoi(input.c_str());
         if (option == 1)
         {
@@ -108,12 +108,14 @@ int enterWebBrowserMode(string servername, int serverport)
 {
     int  sock_fd;
     //struct addrinfo *serv_info, *rp;
+    //int sock_conn, addr_info;
     struct packet *resp = (struct packet *)malloc(sizeof(struct packet));
     char *buffer = (char *)resp;
     int resp_len;
     string pw;
     int ret;
 
+    //string port = to_string(serverport);
     sock_fd = create_client_socket(servername, serverport);
     if (sock_fd < 0)
     {
@@ -121,12 +123,10 @@ int enterWebBrowserMode(string servername, int serverport)
     	return -1;
     }
     /*
-    addr_info = getAddrInfo(servername, serverport, &serv_info);
+    addr_info = getAddrInfo(servername, port.c_str(), &serv_info);
     if (addr_info != 0)
     {
         printf("Error (getaddrinfo): %s\n", gai_strerror(addr_info));
-        now = time(NULL);
-        fprintf(logfile, "%s: Error (getaddrinfo): %s\n", strtok(ctime(&now), "\n"), gai_strerror(addr_info));
         return -1;
     }
     
@@ -147,7 +147,8 @@ int enterWebBrowserMode(string servername, int serverport)
         return -1;
     }
     freeaddrinfo(serv_info);
-    */
+	*/
+
     DEBUG("Socket connected \n");
     /*Getting username and password from stdin*/ 
     getLoginInfo(pw);
@@ -167,8 +168,6 @@ int enterWebBrowserMode(string servername, int serverport)
         return -1;
     }
     DEBUG("Read thread created ret = %d\n", ret);
-    now = time(NULL);
-    //fprintf(logfile, "%s: Read thread created\n", strtok(ctime(&now), "\n"));
     ret = pthread_create(&th2, &ta, (void * (*) (void *)) writeThread, (void *)((long) sock_fd));
     if (ret < 0)
     {
@@ -176,7 +175,6 @@ int enterWebBrowserMode(string servername, int serverport)
         return -1;
     }
     DEBUG("Write thread created ret = %d\n", ret);
-    //fprintf(logfile, "%s: Write thread created\n", strtok(ctime(&now), "\n"));
     while (1) {}
     return 0;
 }

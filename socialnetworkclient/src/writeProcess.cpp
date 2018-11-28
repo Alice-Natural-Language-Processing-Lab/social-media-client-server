@@ -21,8 +21,9 @@
 #include <time.h>
 #include "structures.h"
 #include "func_lib.h"
+#include "networking.h"
+
 extern const char * getCommand(int enumVal);
-//extern FILE *logfile;
 extern time_t now;
 extern char *error;
 extern unsigned int sessionID;
@@ -33,48 +34,49 @@ using namespace std;
 #define ERR_LEN 256
 
 void writeThread(int sock_fd);
-void readResponse(int sock_fd, char *buffer, int req_len);
+int readResponse(int sock_fd, char *buffer, int req_len);
 int parsePacket(struct packet *req);
 void displayContents(struct packet *resp);
 int processResponse(int sock_fd, struct packet *resp);
 
+/*
+ * writeThread() - thread to write to stdout
+ * sock_fd: socket file descriptor
+ */
 void writeThread(int sock_fd)
 {
 	DEBUG("Inside write thread\n");
 	int sock_read, sock_write, sock_close;
-	struct packet *resp = (struct packet *)malloc(sizeof(struct packet));
-	char *buffer = (char *)resp;
+	struct packet resp;
 	int resp_len, ret;
 	/* Accept the response persistently*/
 	while(1)
 	{
-		memset(resp, 0, sizeof(struct packet));
-		resp_len = sizeof(struct packet);
+		memset(&resp, 0, sizeof(struct packet));
 		/* Read server response */
-		readResponse(sock_fd, buffer, resp_len);
-		if(!strlen(buffer))
+		sock_read = read_socket(sock_fd, resp);
+		if(sock_read < 0)
+		{
+			printf("Error(read_socket)\n");
+			return;
+		}
+		if(!sock_read)
 			break;
 		/* Parse the packet for valid packet structure */
-		ret = parsePacket(resp);
+		ret = parsePacket(&resp);
 		if (ret < 0)
 		{
 			printf("Error (parsePacket): Packet parsing/checking failed\n");
 			return;
 		}
-		now = time(NULL);
-		//fprintf(logfile, "%s: Response received:\n", strtok(ctime(&now), "\n"));
-		//fprintf(logfile, "%d | %s | %d | %d\n", resp->content_len, getCommand(resp->cmd_code), resp->req_num, resp->sessionId);
 		/* process the response  */
-		ret = processResponse(sock_fd, resp);
+		ret = processResponse(sock_fd, &resp);
 		if (ret < 0)
 		{
 			printf("Error (processRequest): request processing failed\n");
 			return;
 		}
-		//fflush(logfile);
 	}
-	//fclose(logfile);
-
 }
 
 /*
@@ -83,7 +85,7 @@ void writeThread(int sock_fd)
  * buffer: starting point of request structure
  * req_len: length of request structure
  */
-void readResponse(int sock_fd, char *buffer, int resp_len)
+int readResponse(int sock_fd, char *buffer, int resp_len)
 {
 	int sock_read;
 
@@ -95,9 +97,7 @@ void readResponse(int sock_fd, char *buffer, int resp_len)
 		{
 			strerror_r(errno, error, ERR_LEN);
 			printf("Error (read): %s\n", error);
-			now = time(NULL);
-			//fprintf(logfile, "%s: Error (read): %s\n", strtok(ctime(&now), "\n"), error);
-			return;
+			return -1;
 		}
 		buffer += sock_read;
 		resp_len -= sock_read;
@@ -106,7 +106,7 @@ void readResponse(int sock_fd, char *buffer, int resp_len)
 			break;
 	}
 	cout<<sock_read<<" bytes read\n";
-	return;
+	return sock_read;
 }
 
 /*
@@ -117,7 +117,7 @@ void readResponse(int sock_fd, char *buffer, int resp_len)
 int parsePacket(struct packet *resp)
 {
 	DEBUG("Parsing Packet\n");
-	/* TODO : Complete the function */
+	DEBUG("%d | %s | %d | %u\n", resp->content_len, getCommand(resp->cmd_code), resp->req_num, resp->sessionId);
 	switch (resp->cmd_code)
 	{
 	case LOGIN:
@@ -134,21 +134,21 @@ int parsePacket(struct packet *resp)
 		break;
 	default:
 		printf("Invalid command, code = %d\n", resp->cmd_code);
-		now = time(NULL);
-		//fprintf(logfile, "%s: Error (parsePacket): Invalid command, code = %d\n",
-				//strtok(ctime(&now), "\n"), resp->cmd_code);
 		return -1;
 	}
 	return 0;
 }
 
 /*
- * processResponse()
- * req: request structure
+ * processResponse() - process the response from the server
+ * resp: response structure
  * return 0(request processed successfully) -1(request processing failed)
  */
 int processResponse(int sock_fd, struct packet *resp)
 {
+	/*
+	 * TODO: in response is login with username invalid msg, then print the error msg
+	 */
 
 	if(resp->cmd_code == LIST || resp->cmd_code == SHOW || resp->cmd_code == NOTIFY)
 		displayContents(resp);
@@ -157,18 +157,17 @@ int processResponse(int sock_fd, struct packet *resp)
 	else
 	{
 		printf("Error (processResponse):Invalid Option\n");
-		now = time(NULL);
-		//fprintf(logfile, "%s: Error (processResponse): Invalid Option, command code = %d\n",
-						//strtok(ctime(&now), "\n"), resp->cmd_code);
 		return -1;
 	}
 	return 0;
 }
 
+/*
+ * displayContents() - display the contents of the response packet
+ * resp: response from server
+ */
 void displayContents(struct packet *resp)
 {
-	cout<<resp->contents.rvcd_cnts<<endl;
+	cout<<resp->contents.rcvd_cnts<<endl;
 	return;
 }
-
-
