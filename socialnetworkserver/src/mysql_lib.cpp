@@ -7,14 +7,6 @@
 
 #include "mysql_lib.h"
 
-Notifications::Notifications(MySQLDatabaseInterface* dbInterface) {
-	databaseInterface = dbInterface;
-}
-
-Notifications::~Notifications() {
-
-}
-
 MySQLDatabaseDriver::MySQLDatabaseDriver() {
 
 	try {
@@ -62,7 +54,7 @@ void MySQLDatabaseInterface::getResults(string query) {
 		stmt = con->createStatement();
 		res = stmt->executeQuery(query.c_str());
 
-		printResults(res);
+		printResults();
 
 		delete stmt;
 		delete res;
@@ -76,17 +68,89 @@ void MySQLDatabaseInterface::getResults(string query) {
 	}
 }
 
-int MySQLDatabaseInterface::login(struct packet &pkt) {
+int MySQLDatabaseInterface::login(struct packet &pkt, int socket_descriptor) {
 
-	/*
-	 pkt.contents.username;
-	 pkt.contents.password;
-	 pkt.sessionId;
-	 pkt.contents.rvcd_cnts; //for error return
-	 sessionid max is 4,294,967,295
-	 */
+	bool valid_session_id = false;
+	unsigned int temp_session_id, temp_user_id;
+	srand(time(NULL));
 
-	return 0;
+	try {
+		//check for valid username and password
+		pstmt = con->prepareStatement(
+				"select * from Users where userName = ? and passwordHash = ?");
+		pstmt->setString(1, pkt.contents.username);
+		pstmt->setString(2, pkt.contents.password);
+		res = pstmt->executeQuery();
+
+		//printResults();
+
+		if (res->rowsCount() != 1) {
+			//username and password does not exist or is incorrect
+			pkt.contents.rvcd_cnts =
+					"Username and/or password incorrect or does not exist";
+			delete pstmt;
+			delete res;
+			return -1;
+		}
+		//username and password exists and is correct
+		res->first();
+		temp_user_id = res->getUInt("userID");
+		delete pstmt;
+		delete res;
+
+		//generate and check for valid session_id
+		//this statement doesn't check for existing but invalid session ids. Will eventually run out of session ids
+		pstmt = con->prepareStatement(
+				"select * from InteractionLog where sessionID = ?");
+		while (!valid_session_id) {
+
+			temp_session_id = (unsigned int) round(
+					((float) rand() / RAND_MAX) * session_id_max);
+
+			pstmt->setUInt(1, temp_session_id);
+			res = pstmt->executeQuery();
+
+			//printResults();
+
+			if (res->rowsCount() == 0) {
+				//session_id doesn't exist in table, use this session id
+				valid_session_id = true;
+			}
+			delete res;
+		}
+		delete pstmt;
+
+		//insert row in interaction log (can probably make a function for this)
+		//how to make sure another thread doesn't generate same sessionid and update concurrently? - mainly relying on low probability, similar approach is used for session ids in the wild
+		pstmt =
+				con->prepareStatement(
+						"insert into InteractionLog (userID, sessionID, logout, socketDescriptor, command) values (?, ?, 0, ?, ?)");
+		pstmt->setUInt(1, temp_user_id);
+		pstmt->setUInt(2, temp_session_id);
+		pstmt->setInt(3, socket_descriptor);
+		pstmt->setString(4, "LOGIN " + pkt.contents.username);
+		pstmt->executeUpdate();
+		delete pstmt;
+
+		//write session id back to packet and return 0
+		pkt.sessionId = temp_session_id;
+
+		return 0;
+
+	} catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+
+		pkt.contents.rvcd_cnts = "SQL Error";
+		return -1;
+	}
+
+	pkt.contents.rvcd_cnts = "Unknown function error";
+	return -1;
 }
 
 int MySQLDatabaseInterface::listUsers(struct packet &pkt) {
@@ -134,18 +198,20 @@ int MySQLDatabaseInterface::hasValidSession(struct packet& pkt) {
 		pstmt->setInt(2, session_timeout);
 		res = pstmt->executeQuery();
 
-		printResults(res);
+		//printResults();
 		if (res->rowsCount() > 0) {
 			//valid session
+			delete pstmt;
+			delete res;
 			return 0;
 		} else {
 			//invalid session
 			pkt.contents.rvcd_cnts = "Invalid Session";
+			delete pstmt;
+			delete res;
 			return -1;
 		}
 
-		delete pstmt;
-		delete res;
 	} catch (sql::SQLException &e) {
 		std::cout << "# ERR: SQLException in " << __FILE__;
 		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
@@ -160,21 +226,30 @@ int MySQLDatabaseInterface::hasValidSession(struct packet& pkt) {
 	return -1;
 }
 
-void MySQLDatabaseInterface::printResults(sql::ResultSet* result_set) {
+void MySQLDatabaseInterface::printResults() {
 
-	int column_count;
-
-	result_set_meta_data = result_set->getMetaData();
+	int column_count, initial_row = res->getRow();
+	res->beforeFirst();
+	result_set_meta_data = res->getMetaData();
 	column_count = result_set_meta_data->getColumnCount();
 	std::cout << "\nResults:\n";
 	do {
 		for (int i = 1; i <= column_count; i++) {
-			if (result_set->isBeforeFirst())
+			if (res->isBeforeFirst())
 				std::cout << "\t" << result_set_meta_data->getColumnName(i);
 			else
-				std::cout << "\t" << result_set->getString(i);
+				std::cout << "\t" << res->getString(i);
 		}
 		std::cout << std::endl;
-	} while (result_set->next());
+	} while (res->next());
 	std::cout << std::endl;
+	res->absolute(initial_row);
+}
+
+Notifications::Notifications(MySQLDatabaseInterface* dbInterface) {
+	databaseInterface = dbInterface;
+}
+
+Notifications::~Notifications() {
+
 }
