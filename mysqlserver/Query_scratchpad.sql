@@ -53,10 +53,19 @@ CREATE TABLE `SocialNetwork`.`InteractionLog` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 insert into SocialNetwork.Users (userName, passwordHash)
-values ('frodo', 'baggins'), ('sam', 'gamgee'), ('gandalf','thegrey'), ('gimli','sonofgloin'),('legolas','greeleaf'),('boromir','fromgondor'),('aragorn','sonofarathorn'),('merry','brandybuck'),('pippin','took');
-
+values  ('alex', '17663506432727786073'), ('ben', '12927111708687947557'), 
+		    ('cris', '11740314204215096121'), ('don', '12745502948907907845'), 
+        ('eddy', '4771635686586901585'), ('fred', '3210639344949365877'), 
+        ('george', '6136068120051800929'), ('honey', '9050044803222492725'),
+        ('imy', '1091350801367770665'), ('jack', '7868285383349367941'),
+        ('krish', '15963054882994457561'), ('lilly', '16906882082752180197'),
+        ('mary', '18327857878878084177'), ('noah', '5069992954181438069'),
+        ('omar', '1260992177983512433'), ('pretty', '10940044000550006709'),
+        ('quinton', '4523305108125428409'), ('roger', '18264053755285864037'),
+        ('sam', '9499914711864451609'), ('tom', '10229820929279828485');
+        
 insert into SocialNetwork.Posts (posterUserID, posteeUserID, timestamp, content)
-values (1, 2, '2018-11-07', "Hello friends, how's it going?"), (2, 2, '2018-11-07', "Super political post");
+values (1, 2, '2018-11-07', "Hello friends, how's it going?"), (2, 2, '2018-11-08', "Super political post");
 
 insert into SocialNetwork.Notifications (postID, userID, `read`, timestamp)
 values (1, 1, 0, '2018-11-07 00:00:00'), (2,2,0,'2018-11-07');
@@ -81,4 +90,3 @@ DROP TABLE `SocialNetwork`.`Users`;
 DROP DATABASE `SocialNetwork`;
 
 /*------------------------------------------------------------*/
-

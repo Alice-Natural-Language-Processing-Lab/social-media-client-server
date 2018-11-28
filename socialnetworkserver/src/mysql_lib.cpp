@@ -24,10 +24,30 @@ MySQLDatabaseDriver::MySQLDatabaseDriver() {
 MySQLDatabaseDriver::~MySQLDatabaseDriver() {
 }
 
+void MySQLDatabaseInterface::printResults() {
+
+	int column_count, initial_row = res->getRow();
+	res->beforeFirst();
+	result_set_meta_data = res->getMetaData();
+	column_count = result_set_meta_data->getColumnCount();
+	std::cout << "\nResults:\n";
+	do {
+		for (int i = 1; i <= column_count; i++) {
+			if (res->isBeforeFirst())
+				std::cout << "\t" << result_set_meta_data->getColumnName(i);
+			else
+				std::cout << "\t" << res->getString(i);
+		}
+		std::cout << std::endl;
+	} while (res->next());
+	std::cout << std::endl;
+	res->absolute(initial_row);
+}
+
 MySQLDatabaseInterface::MySQLDatabaseInterface(
-		MySQLDatabaseDriver* databaseDriver, string server_url,
-		string server_username, string server_password,
-		string server_database) {
+		MySQLDatabaseDriver* databaseDriver, std::string server_url,
+		std::string server_username, std::string server_password,
+		std::string server_database) {
 
 	driver = databaseDriver->driver;
 	try {
@@ -48,7 +68,7 @@ MySQLDatabaseInterface::~MySQLDatabaseInterface() {
 	delete con;
 }
 
-void MySQLDatabaseInterface::getResults(string query) {
+void MySQLDatabaseInterface::getResults(std::string query) {
 
 	try {
 		stmt = con->createStatement();
@@ -66,6 +86,54 @@ void MySQLDatabaseInterface::getResults(string query) {
 		std::cout << " (MySQL error code: " << e.getErrorCode();
 		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
 	}
+}
+
+int MySQLDatabaseInterface::hasValidSession(struct packet& pkt) {
+
+	/*
+	 * query the database for a matching session from the most recent row
+	 * that is sooner than the timeout and isn't logout
+	 *
+	 * no valid session than rcvd_contents
+	 * is just an "invalid session" error message
+	 */
+
+	try {
+		pstmt =
+				con->prepareStatement(
+						"SELECT * FROM (SELECT * FROM SocialNetwork.InteractionLog WHERE sessionID = ? ORDER BY TIMESTAMP DESC LIMIT 1) TEMP WHERE ADDTIME(TIMESTAMP, CONCAT('00:', ? ,':00')) > NOW() AND logout <> 1");
+		pstmt->setUInt(1, pkt.sessionId);
+		pstmt->setInt(2, session_timeout);
+		res = pstmt->executeQuery();
+
+		//printResults();
+		if (res->rowsCount() > 0) {
+			//valid session
+			delete pstmt;
+			delete res;
+			return 0;
+		} else {
+			//invalid session
+			pkt.contents.rcvd_cnts = "Invalid Session";
+			delete pstmt;
+			delete res;
+			return -1;
+		}
+
+	} catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+
+		pkt.contents.rcvd_cnts = "Server Error";
+		return -2;
+	}
+
+	pkt.contents.rcvd_cnts = "Server Error";
+	return -2;
 }
 
 int MySQLDatabaseInterface::login(struct packet &pkt, int socket_descriptor) {
@@ -86,7 +154,7 @@ int MySQLDatabaseInterface::login(struct packet &pkt, int socket_descriptor) {
 
 		if (res->rowsCount() != 1) {
 			//username and password does not exist or is incorrect
-			pkt.contents.rvcd_cnts =
+			pkt.contents.rcvd_cnts =
 					"Username and/or password incorrect or does not exist";
 			delete pstmt;
 			delete res;
@@ -145,17 +213,17 @@ int MySQLDatabaseInterface::login(struct packet &pkt, int socket_descriptor) {
 		std::cout << " (MySQL error code: " << e.getErrorCode();
 		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
 
-		pkt.contents.rvcd_cnts = "SQL Error";
-		return -1;
+		pkt.contents.rcvd_cnts = "Server Error";
+		return -2;
 	}
 
-	pkt.contents.rvcd_cnts = "Unknown function error";
-	return -1;
+	pkt.contents.rcvd_cnts = "Server Error";
+	return -2;
 }
 
 int MySQLDatabaseInterface::listUsers(struct packet &pkt) {
 
-	string temp;
+	std::string temp;
 	try {
 		stmt = con->createStatement();
 		res = stmt->executeQuery("select userName from Users");
@@ -163,11 +231,14 @@ int MySQLDatabaseInterface::listUsers(struct packet &pkt) {
 		//printResults();
 
 		while (res->next()) {
-			temp += to_string(res->getRow()) + " - "
-					+ res->getString("userName") + "\n";
+			temp += std::to_string(res->getRow()) + " - "
+					+ res->getString("userName");
+			if (!res->isLast()) {
+				temp += "\n";
+			}
 		}
 
-		pkt.contents.rvcd_cnts = temp;
+		pkt.contents.rcvd_cnts = temp;
 
 		delete stmt;
 		delete res;
@@ -182,59 +253,71 @@ int MySQLDatabaseInterface::listUsers(struct packet &pkt) {
 		std::cout << " (MySQL error code: " << e.getErrorCode();
 		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
 
-		return -1;
+		pkt.contents.rcvd_cnts = "Server Error";
+		return -2;
 	}
 
-	return -1;
+	pkt.contents.rcvd_cnts = "Server Error";
+	return -2;
 }
 
 int MySQLDatabaseInterface::showWall(struct packet &pkt) {
 
-	/*
-	 pkt.sessionId;
-	 pkt.contents.wallOwner;
-	 pkt.contents.rvcd_cnts; //multiples of timestamp\n user posted on users wall\n contents \n\n | | for errors set error number and pass error string
-	 */
-
-	return 0;
-}
-
-int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
-
-	return 0;
-}
-
-int MySQLDatabaseInterface::hasValidSession(struct packet& pkt) {
-
-	/*
-	 * query the database for a matching session from the most recent row
-	 * that is sooner than the timeout and isn't logout
-	 *
-	 * no valid session than rcvd_contents
-	 * is just an "invalid session" error message
-	 */
-
+	std::string temp;
 	try {
-		pstmt =
-				con->prepareStatement(
-						"SELECT * FROM (SELECT * FROM SocialNetwork.InteractionLog WHERE sessionID = ? ORDER BY TIMESTAMP DESC LIMIT 1) TEMP WHERE ADDTIME(TIMESTAMP, CONCAT('00:', ? ,':00')) > NOW() AND logout <> 1");
-		pstmt->setUInt(1, pkt.sessionId);
-		pstmt->setInt(2, session_timeout);
+		//see if requested user exists
+		pstmt = con->prepareStatement("select * from Users where userName = ?");
+		pstmt->setString(1, pkt.contents.wallOwner);
 		res = pstmt->executeQuery();
 
 		//printResults();
-		if (res->rowsCount() > 0) {
-			//valid session
-			delete pstmt;
-			delete res;
-			return 0;
-		} else {
-			//invalid session
-			pkt.contents.rvcd_cnts = "Invalid Session";
+
+		if (res->rowsCount() == 0) {
+			//user doesn't exist
+			pkt.contents.rcvd_cnts = "User doesn't exist";
+
 			delete pstmt;
 			delete res;
 			return -1;
 		}
+
+		delete pstmt;
+		delete res;
+
+		//get requested user's wall
+		pstmt =
+				con->prepareStatement(
+						"select timestamp, content, userPostee.userName postee, userPoster.userName poster from Posts join Users userPostee on userPostee.userID = Posts.posteeUserID join Users userPoster on userPoster.userID = Posts.posterUserID where userPostee.userName = ? order by timestamp asc");
+		pstmt->setString(1, pkt.contents.wallOwner);
+		res = pstmt->executeQuery();
+
+		//printResults();
+
+		if (res->rowsCount() == 0) {
+			//no wall contents for user
+			pkt.contents.rcvd_cnts = "No wall contents";
+
+			delete pstmt;
+			delete res;
+			return 0;
+		}
+
+		while (res->next()) {
+			temp += res->getString("timestamp") + " - "
+					+ res->getString("poster") + " posted on "
+					+ res->getString("postee") + "'s wall\n"
+					+ res->getString("content");
+			if (!res->isLast()) {
+				temp += "\n\n";
+			}
+		}
+
+		pkt.contents.rcvd_cnts = temp;
+
+		delete pstmt;
+		delete res;
+
+		return 0;
 
 	} catch (sql::SQLException &e) {
 		std::cout << "# ERR: SQLException in " << __FILE__;
@@ -244,30 +327,22 @@ int MySQLDatabaseInterface::hasValidSession(struct packet& pkt) {
 		std::cout << " (MySQL error code: " << e.getErrorCode();
 		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
 
-		return -1;
+		pkt.contents.rcvd_cnts = "Server Error";
+		return -2;
 	}
 
-	return -1;
+	pkt.contents.rcvd_cnts = "Server Error";
+	return -2;
 }
 
-void MySQLDatabaseInterface::printResults() {
+int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
 
-	int column_count, initial_row = res->getRow();
-	res->beforeFirst();
-	result_set_meta_data = res->getMetaData();
-	column_count = result_set_meta_data->getColumnCount();
-	std::cout << "\nResults:\n";
-	do {
-		for (int i = 1; i <= column_count; i++) {
-			if (res->isBeforeFirst())
-				std::cout << "\t" << result_set_meta_data->getColumnName(i);
-			else
-				std::cout << "\t" << res->getString(i);
-		}
-		std::cout << std::endl;
-	} while (res->next());
-	std::cout << std::endl;
-	res->absolute(initial_row);
+	return 0;
+}
+
+int MySQLDatabaseInterface::logout(struct packet& pkt) {
+
+	return 0;
 }
 
 Notifications::Notifications(MySQLDatabaseInterface* dbInterface) {
