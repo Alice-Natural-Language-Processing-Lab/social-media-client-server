@@ -56,7 +56,7 @@ insert into SocialNetwork.Users (userName, passwordHash)
 values ('frodo', 'baggins'), ('sam', 'gamgee'), ('gandalf','thegrey'), ('gimli','sonofgloin'),('legolas','greeleaf'),('boromir','fromgondor'),('aragorn','sonofarathorn'),('merry','brandybuck'),('pippin','took');
 
 insert into SocialNetwork.Posts (posterUserID, posteeUserID, timestamp, content)
-values (1, 2, '2018-11-07', "Hello friends, how's it going?"), (2, 2, '2018-11-07', "Super political post");
+values (1, 2, '2018-11-07', "Hello friends, how's it going?"), (2, 2, '2018-11-08', "Super political post");
 
 insert into SocialNetwork.Notifications (postID, userID, `read`, timestamp)
 values (1, 1, 0, '2018-11-07 00:00:00'), (2,2,0,'2018-11-07');
@@ -81,4 +81,3 @@ DROP TABLE `SocialNetwork`.`Users`;
 DROP DATABASE `SocialNetwork`;
 
 /*------------------------------------------------------------*/
-

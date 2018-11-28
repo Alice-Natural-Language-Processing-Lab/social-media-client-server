@@ -31,7 +31,7 @@ struct content {
 	char postee[POSTEE_LEN];
 	char post[POST_LEN];
 	char wallOwner[OWNER_LEN];
-	char rvcd_cnts[MAX_CONT_LEN];
+	char rcvd_cnts[MAX_CONT_LEN];
 };
 */
 
@@ -41,7 +41,7 @@ struct content {
 	string postee;
 	string post;
 	string wallOwner;
-	string rvcd_cnts;
+	string rcvd_cnts;
 };
 
 /**

@@ -55,11 +55,11 @@ public:
 	unsigned int session_id_max = UINT_MAX;
 
 	MySQLDatabaseInterface(MySQLDatabaseDriver* databaseDriver,
-			string server_url, string server_username, string server_password,
-			string server_database);
+			std::string server_url, std::string server_username,
+			std::string server_password, std::string server_database);
 	~MySQLDatabaseInterface();
 
-	void getResults(string query);
+	void getResults(std::string query);
 	/*
 	 * Input query is a valid SQL statement that returns rows
 	 * Output is SQL results printed to standard out
@@ -69,13 +69,16 @@ public:
 	/*
 	 * the following functions take the request packet input, perform SQL queries and then overwrite the request
 	 * packet with the corresponding response packet. They return 0 if successful and
-	 * -1 if unsuccessful. If unsuccessful, rvcd_cnts will also contain an error message.
+	 * -1 if unsuccessful. If unsuccessful, rcvd_cnts will also contain an error message.
 	 */
 
 	int hasValidSession(struct packet& pkt);
 	/*
 	 * This function checks if the session in the packet is valid based on session_timeout,
-	 * returns 0 if valid, otherwise returns -1 and modifies packet to have error message
+	 * returns:
+	 * 0 if valid
+	 * -1 for invalid session and modifies packet to have error message
+	 * -2 for server error and modifies packet to have error message
 	 */
 
 	int login(struct packet& pkt, int socket_descriptor);
@@ -83,6 +86,7 @@ public:
 	 * Checks if username and password exist in the table. If so, generates
 	 * a valid sessionID and writes that ID to the packet and returns 0.
 	 * If not, writes an error message to received contents and returns -1.
+	 * If server error, writes an error message to received contents and returns -2.
 	 */
 
 	int listUsers(struct packet& pkt);
@@ -93,10 +97,25 @@ public:
 	 * 1. alice
 	 * 2. bob
 	 *
-	 * Returns 0 if successful, or -1 if unsuccessful
+	 * Returns 0 if successful, or -2 if server error and writes error message to rcvd_cnts
 	 */
 
 	int showWall(struct packet& pkt);
+	/*
+	 * Queries database for list of posts on a user's wall. Writes a formatted
+	 * string of posts to rcvd_cnts.
+	 * Ex:
+	 * timestamp - Alice posted on Bob's wall
+	 * Oh my god! Politics!
+	 *
+	 * timestamp - Claire posted on Bob's wall
+	 * I know, right!
+	 *
+	 * Returns 0 if successful,
+	 * or -1 if unsuccessful and writes error message to rcvd_cnts,
+	 * or -2 if server error and writes error message to rcvd_cnts
+	 */
+
 	int postOnWall(struct packet& pkt);
 	int logout(struct packet& pkt);
 };
