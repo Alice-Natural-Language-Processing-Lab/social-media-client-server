@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <cstdlib>
 #include <string>
+#include <iostream>
+#include <tr1/functional>
 
 #include "mysql_lib.h"
 
@@ -22,6 +24,7 @@ using namespace std;
 void test_hasValidSession(MySQLDatabaseInterface& database);
 void test_getResults(MySQLDatabaseInterface& database);
 void test_login(MySQLDatabaseInterface& database);
+size_t hash_func(string input);
 
 int main() {
 
@@ -31,11 +34,15 @@ int main() {
 	SERVER_PASSWORD, SERVER_DATABASE);
 	Notifications notifications(&database);
 
+	string input;
+
 	while (true) {
 		//test_getResults(database);
 		//test_hasValidSession(database);
 		test_login(database);
 		getchar();
+		//getline(cin, input);
+		//cout << hash_func(input);
 	}
 
 	exit(0);
@@ -70,12 +77,12 @@ void test_login(MySQLDatabaseInterface& database) {
 	int socket_descriptor_test = 5;
 	packet test_packet1, test_packet2, test_packet3;
 	test_packet1.contents.username = "frodo";
-	test_packet1.contents.password = "123456789012345";
+	test_packet1.contents.password = "baggins";
 	test_packet2.contents.username = "sam";
 	test_packet2.contents.password = "wrongpass";
 	test_packet3.contents.username = "nousername";
 	test_packet3.contents.password = "doesntmatter";
-	//values ('frodo', '123456789012345'), ('sam', '543210987654321');
+
 	database.login(test_packet1, socket_descriptor_test);
 	database.login(test_packet2, socket_descriptor_test);
 	database.login(test_packet3, socket_descriptor_test);
@@ -88,4 +95,10 @@ void test_login(MySQLDatabaseInterface& database) {
 	cout << "test_packet3:" << endl << "sessionid: " << test_packet3.sessionId
 			<< endl << "rcvd_contents: " << test_packet3.contents.rvcd_cnts
 			<< endl;
+}
+
+size_t hash_func(string input) {
+
+	std::tr1::hash<std::string> str_hash;
+	return str_hash(input);
 }

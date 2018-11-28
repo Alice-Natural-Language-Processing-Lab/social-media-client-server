@@ -3,7 +3,7 @@ CREATE DATABASE `SocialNetwork` /*!40100 DEFAULT CHARACTER SET latin1 */;
 CREATE TABLE `SocialNetwork`.`Users` (
   `userID` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
   `userName` varchar(25) NOT NULL,
-  `passwordHash` varchar(15) NOT NULL,
+  `passwordHash` varchar(25) NOT NULL,
   PRIMARY KEY (`userID`),
   UNIQUE KEY `userID_UNIQUE` (`userID`),
   UNIQUE KEY `userName_UNIQUE` (`userName`)
@@ -53,7 +53,7 @@ CREATE TABLE `SocialNetwork`.`InteractionLog` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 insert into SocialNetwork.Users (userName, passwordHash)
-values ('frodo', '123456789012345'), ('sam', '543210987654321');
+values ('frodo', 'baggins'), ('sam', 'gamgee'), ('gandalf','thegrey'), ('gimli','sonofgloin'),('legolas','greeleaf'),('boromir','fromgondor'),('aragorn','sonofarathorn'),('merry','brandybuck'),('pippin','took');
 
 insert into SocialNetwork.Posts (posterUserID, posteeUserID, timestamp, content)
 values (1, 2, '2018-11-07', "Hello friends, how's it going?"), (2, 2, '2018-11-07', "Super political post");
@@ -82,6 +82,3 @@ DROP DATABASE `SocialNetwork`;
 
 /*------------------------------------------------------------*/
 
-
-insert into InteractionLog (userID, sessionID, logout, socketDescriptor, command)
-values (1, 23456, 0, 9, "test command");

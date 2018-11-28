@@ -85,8 +85,6 @@ public:
 	 * If not, writes an error message to received contents and returns -1.
 	 */
 
-	//consider having some of these functions return bool instead of ints?
-
 	int listUsers(struct packet& pkt);
 	int showWall(struct packet& pkt);
 	int postOnWall(struct packet& pkt);
