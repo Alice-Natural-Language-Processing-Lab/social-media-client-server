@@ -68,11 +68,12 @@ void MySQLDatabaseInterface::getResults(string query) {
 	}
 }
 
-int MySQLDatabaseInterface::login(struct packet &pkt) {
+int MySQLDatabaseInterface::login(struct packet &pkt, int socket_descriptor) {
 
 	bool valid_session_id = false;
 	unsigned int temp_session_id;
 	try {
+		//check for valid username and password
 		pstmt = con->prepareStatement(
 				"select * from Users where userName = ? and passwordHash = ?");
 		pstmt->setString(1, pkt.contents.username);
@@ -93,28 +94,34 @@ int MySQLDatabaseInterface::login(struct packet &pkt) {
 		delete pstmt;
 		delete res;
 
+		//generate and check for valid session_id
+		//this statement doesn't check for existing but invalid session ids. Will eventually run out of session ids
+		pstmt = con->prepareStatement(
+				"select * from InteractionLog where sessionID = ?");
 		while (!valid_session_id) {
 
 			temp_session_id = (unsigned int) round(
 					((float) rand() / RAND_MAX) * session_id_max);
 
-			//this statement doesn't check for existing but invalid session ids. Will eventually run out of session ids
-			pstmt = con->prepareStatement(
-					"select * from InteractionLog where sessionID = ?");
 			pstmt->setUInt(1, temp_session_id);
 			res = pstmt->executeQuery();
 
 			printResults(res);
 
 			if (res->rowsCount() == 0) {
-				//session_id doesn't exists in table, use this session id
+				//session_id doesn't exist in table, use this session id
 				valid_session_id = true;
 			}
-			delete pstmt;
 			delete res;
 		}
+		delete pstmt;
+
 		//insert row in interaction log (can probably make a function for this)
-		//how to make sure another thread doesn't generate same sessionid and update concurrently?
+		//how to make sure another thread doesn't generate same sessionid and update concurrently? - mainly relying on low probability, similar approach is used for session ids in the wild
+		//insert into InteractionLog (userID, sessionID, logout, socketDescriptor, command)
+		//values (1, 23456, 0, 9, "test command");
+		pstmt = con->prepareStatement("insert into InteractionLog (userID, sessionID, logout, socketDescriptor, command)");
+
 		//write session id back to packet and return 0
 
 		return 0;

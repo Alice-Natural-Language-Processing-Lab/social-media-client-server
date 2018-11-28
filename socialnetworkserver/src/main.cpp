@@ -67,6 +67,7 @@ void test_getResults(MySQLDatabaseInterface& database) {
 
 void test_login(MySQLDatabaseInterface& database) {
 
+	int socket_descriptor_test = 5;
 	packet test_packet1, test_packet2, test_packet3;
 	test_packet1.contents.username = "frodo";
 	test_packet1.contents.password = "123456789012345";
@@ -75,13 +76,13 @@ void test_login(MySQLDatabaseInterface& database) {
 	test_packet3.contents.username = "nousername";
 	test_packet3.contents.password = "doesntmatter";
 	//values ('frodo', '123456789012345'), ('sam', '543210987654321');
-	cout << "test_packet1: " << database.login(test_packet1) << endl
+	cout << "test_packet1: " << database.login(test_packet1, socket_descriptor_test) << endl
 			<< "sessionid: " << test_packet1.sessionId << endl
 			<< "rcvd_contents: " << test_packet1.contents.rvcd_cnts << endl;
-	cout << "test_packet2: " << database.login(test_packet2) << endl
+	cout << "test_packet2: " << database.login(test_packet2, socket_descriptor_test) << endl
 			<< "sessionid: " << test_packet2.sessionId << endl
 			<< "rcvd_contents: " << test_packet2.contents.rvcd_cnts << endl;
-	cout << "test_packet3: " << database.login(test_packet3) << endl
+	cout << "test_packet3: " << database.login(test_packet3, socket_descriptor_test) << endl
 			<< "sessionid: " << test_packet3.sessionId << endl
 			<< "rcvd_contents: " << test_packet3.contents.rvcd_cnts << endl;
 }
