@@ -270,7 +270,8 @@ int read_socket(int socketfd, struct packet &pkt) {
 		return -1;
 	}
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
-	pkt.contents.username = component;
+	if (component.length() > 0)
+		pkt.contents.username = component;
 	//printf("username:%s\n", pkt.contents.username.c_str());
 
 	startIndex = pktString.find(",password:", endIndex);
@@ -280,7 +281,8 @@ int read_socket(int socketfd, struct packet &pkt) {
 		return -1;
 	}
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
-	pkt.contents.password = component;
+	if (component.length() > 0)
+		pkt.contents.password = component;
 	//printf("password:%s\n", pkt.contents.password.c_str());
 
 	startIndex = pktString.find(",postee:", endIndex);
@@ -290,7 +292,8 @@ int read_socket(int socketfd, struct packet &pkt) {
 		return -1;
 	}
 	component = pktString.substr(startIndex + 8, endIndex - startIndex - 8);
-	pkt.contents.postee = component;
+	if (component.length() > 0)
+		pkt.contents.postee = component;
 	//printf("postee:%s\n", pkt.contents.postee.c_str());
 
 	startIndex = pktString.find(",post:", endIndex);
@@ -300,7 +303,8 @@ int read_socket(int socketfd, struct packet &pkt) {
 		return -1;
 	}
 	component = pktString.substr(startIndex + 6, endIndex - startIndex - 6);
-	pkt.contents.post = component;
+	if (component.length() > 0)
+		pkt.contents.post = component;
 	//printf("post:%s\n", pkt.contents.post.c_str());
 
 	startIndex = pktString.find(",wallOwner:", endIndex);
@@ -310,7 +314,8 @@ int read_socket(int socketfd, struct packet &pkt) {
 		return -1;
 	}
 	component = pktString.substr(startIndex + 11, endIndex - startIndex - 11);
-	pkt.contents.wallOwner = component;
+	if (component.length() > 0)
+		pkt.contents.wallOwner = component;
 	//printf("wallOwner:%s\n", pkt.contents.wallOwner.c_str());
 
 	startIndex = pktString.find(",rcvd_cnts:", endIndex);
@@ -319,7 +324,8 @@ int read_socket(int socketfd, struct packet &pkt) {
 		return -1;
 	}
 	component = pktString.substr(startIndex + 11, packetLength - startIndex - 11);
-	pkt.contents.rcvd_cnts = component;
+	if (component.length() > 0)
+		pkt.contents.rcvd_cnts = component;
 	//printf("rcvd_cnts:%s\n", pkt.contents.rcvd_cnts.c_str());
 
 	return totalRead;
