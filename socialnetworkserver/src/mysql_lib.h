@@ -78,7 +78,7 @@ public:
 	 * returns 0 if valid, otherwise returns -1 and modifies packet to have error message
 	 */
 
-	int login(struct packet& pkt);
+	int login(struct packet& pkt, int socket_descriptor);
 	/*
 	 * Checks if username and password exist in the table. If so, generates
 	 * a valid sessionID and writes that ID to the packet and returns 0.
