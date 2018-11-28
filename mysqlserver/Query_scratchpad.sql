@@ -13,7 +13,7 @@ CREATE TABLE `SocialNetwork`.`Posts` (
   `postID` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
   `posterUserID` smallint(5) unsigned NOT NULL,
   `posteeUserID` smallint(5) unsigned NOT NULL,
-  `timestamp` datetime NOT NULL,
+  `timestamp` datetime NOT NULL DEFAULT NOW(),
   `content` TEXT NOT NULL,
   PRIMARY KEY (`postID`),
   UNIQUE KEY `postID_UNIQUE` (`postID`),
@@ -28,7 +28,7 @@ CREATE TABLE `SocialNetwork`.`Notifications` (
   `postID` smallint(5) unsigned NOT NULL,
   `userID` smallint(5) unsigned NOT NULL,
   `read` boolean NOT NULL,
-  `timestamp` datetime NOT NULL,
+  `timestamp` datetime NOT NULL DEFAULT NOW(),
   PRIMARY KEY (`notificationID`),
   UNIQUE KEY `notificationID_UNIQUE` (`notificationID`),
   UNIQUE KEY `post_user_UNIQUE` (`postID`,`userID`),
@@ -42,7 +42,7 @@ CREATE TABLE `SocialNetwork`.`InteractionLog` (
   `interactionID` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
   `userID` smallint(5) unsigned NOT NULL,
   `sessionID` int unsigned,
-  `timestamp` datetime NOT NULL,
+  `timestamp` datetime NOT NULL DEFAULT NOW(),
   `logout` boolean NOT NULL,
   `socketDescriptor` smallint(5) NOT NULL,
   `command` varchar(25) NOT NULL,
@@ -81,4 +81,5 @@ DROP DATABASE `SocialNetwork`;
 /*------------------------------------------------------------*/
 
 
-select * from Users where userName = "frodo" and passwordHash = "123456789012345";
+insert into InteractionLog (userID, sessionID, logout, socketDescriptor, command)
+values (1, 23456, 0, 9, "test command");
