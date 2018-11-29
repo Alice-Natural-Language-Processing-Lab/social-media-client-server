@@ -138,11 +138,23 @@ private:
 			unsigned int socket_descriptor = 0);
 	/*
 	 * Used for updating InteractionLog
+	 *
 	 * Should only be called after existing statements, prepared statements,
 	 * or result sets have been deleted as this modifies the private prepared statement
 	 * and result set variables. Creates own prepared statements for updating database.
 	 *
 	 * Returns 0 if successful, returns -2 if unintended SQL behavior/server error
+	 */
+
+	unsigned int getUserID(std::string user_name);
+	/*
+	 * Used for checking if a user exists in the database
+	 *
+	 * Should only be called after existing statements, prepared statements,
+	 * or result sets have been deleted as this modifies the private prepared statement
+	 * and result set variables. Creates own prepared statements for querying database.
+	 *
+	 * Returns userID if successful, returns -1 if user doesn't exist, returns -2 if unintended SQL behavior/server error
 	 */
 };
 

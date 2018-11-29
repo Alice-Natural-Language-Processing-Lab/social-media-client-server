@@ -257,24 +257,19 @@ int MySQLDatabaseInterface::showWall(struct packet &pkt) {
 
 	std::string temp;
 	try {
-		//see if requested user exists
-		pstmt = con->prepareStatement("select * from Users where userName = ?");
-		pstmt->setString(1, pkt.contents.wallOwner);
-		res = pstmt->executeQuery();
-
-		//printResults();
-
-		if (res->rowsCount() == 0) {
-			//user doesn't exist
+		switch (getUserID(pkt.contents.wallOwner)) {
+		case -1:
 			pkt.contents.rcvd_cnts = "User doesn't exist";
-
-			delete pstmt;
-			delete res;
 			return -1;
+			break;
+		case -2:
+			pkt.contents.rcvd_cnts = "Server Error";
+			return -2;
+			break;
+		default:
+			//user exists
+			break;
 		}
-
-		delete pstmt;
-		delete res;
 
 		//get requested user's wall
 		pstmt =
@@ -409,6 +404,47 @@ int MySQLDatabaseInterface::insertInteractionLog(unsigned int session_id,
 
 		delete pstmt;
 		return 0;
+
+	} catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+
+		return -2;
+	}
+
+	return -2;
+}
+
+unsigned int MySQLDatabaseInterface::getUserID(std::string user_name) {
+
+	unsigned int temp_user_id;
+	try {
+		//see if requested user exists
+		pstmt = con->prepareStatement("select * from Users where userName = ?");
+		pstmt->setString(1, user_name);
+		res = pstmt->executeQuery();
+
+		//printResults();
+
+		if (res->rowsCount() == 0) {
+			//user doesn't exist
+			delete pstmt;
+			delete res;
+
+			return -1;
+		}
+		//user does exist, extract userID
+		res->first();
+		temp_user_id = res->getUInt("userID");
+
+		delete pstmt;
+		delete res;
+
+		return temp_user_id;
 
 	} catch (sql::SQLException &e) {
 		std::cout << "# ERR: SQLException in " << __FILE__;
