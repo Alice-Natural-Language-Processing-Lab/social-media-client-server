@@ -25,6 +25,7 @@ void test_login(MySQLDatabaseInterface& database);
 void test_listUsers(MySQLDatabaseInterface& database);
 void test_showWall(MySQLDatabaseInterface& database);
 void test_postOnWall(MySQLDatabaseInterface& database);
+void test_logout(MySQLDatabaseInterface& database);
 
 packet test_packet1, test_packet2, test_packet3;
 
@@ -36,18 +37,15 @@ int main() {
 	SERVER_PASSWORD, SERVER_DATABASE);
 	Notifications notifications(&database);
 
-	string input;
-
 	while (true) {
 		//test_getResults(database);
 		test_login(database);
-		//test_hasValidSession(database);
 		//test_listUsers(database);
 		test_postOnWall(database);
 		test_showWall(database);
+		test_logout(database);
+		test_hasValidSession(database);
 		getchar();
-		//getline(cin, input);
-		//cout << hash_func(input);
 	}
 
 	exit(0);
@@ -137,4 +135,16 @@ void test_postOnWall(MySQLDatabaseInterface& database) {
 
 	database.postOnWall(test_packet1);
 	cout << "test_packet1:\n" << test_packet1.contents.rcvd_cnts << endl;
+}
+
+void test_logout(MySQLDatabaseInterface& database) {
+
+	database.logout(test_packet1);
+	cout << "test_packet1:\n" << test_packet1.contents.rcvd_cnts << endl;
+
+	database.logout(test_packet1);
+	cout << "test_packet1:\n" << test_packet1.contents.rcvd_cnts << endl;
+
+	database.logout(test_packet2);
+	cout << "test_packet2:\n" << test_packet2.contents.rcvd_cnts << endl;
 }

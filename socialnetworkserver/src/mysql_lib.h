@@ -126,7 +126,6 @@ public:
 	 *
 	 * If successful, returns 0
 	 * Otherwise:
-	 * returns -1 if unsuccessful and writes error message to rcvd_cnts
 	 * returns -2 if server error and writes error message to rcvd_cnts
 	 */
 
