@@ -20,7 +20,7 @@
 
 using namespace std;
 #define DEBUG
-#define ERR_LEN			256
+#define ERR_LEN	256
 
 string username;
 unsigned int sessionID;
@@ -42,7 +42,6 @@ int main(int argc, char *argv[])
 	string servername = "localhost";
 	int serverport = 5354;
 	int ret = 0;
-
 	switch (argc)
 	{
 	case 1:
@@ -84,7 +83,7 @@ int enterLoginMode(string servername, int serverport)
         cout<<"1. Login\n2. Exit"<<endl;
         getline(std::cin, input);
         if (!input.length())
-        	break;
+        	continue;
         option = atoi(input.c_str());
         if (option == 1)
         {
