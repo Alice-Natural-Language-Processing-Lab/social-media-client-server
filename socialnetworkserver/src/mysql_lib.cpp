@@ -287,27 +287,29 @@ int MySQLDatabaseInterface::showWall(struct packet &pkt) {
 
 		if (res->rowsCount() == 0) {
 			//no wall contents for user
-			pkt.contents.rcvd_cnts = "No wall contents";
-
-			delete pstmt;
-			delete res;
-			return 0;
-		}
-
-		while (res->next()) {
-			temp += res->getString("timestamp") + " - "
-					+ res->getString("poster") + " posted on "
-					+ res->getString("postee") + "'s wall\n"
-					+ res->getString("content");
-			if (!res->isLast()) {
-				temp += "\n\n";
+			temp = "No wall contents";
+		} else {
+			//generate wall contents
+			while (res->next()) {
+				temp += res->getString("timestamp") + " - "
+						+ res->getString("poster") + " posted on "
+						+ res->getString("postee") + "'s wall\n"
+						+ res->getString("content");
+				if (!res->isLast()) {
+					temp += "\n\n";
+				}
 			}
+		}
+		delete pstmt;
+		delete res;
+
+		if (insertInteractionLog(pkt.sessionId, false,
+				"SHOW " + pkt.contents.wallOwner) != 0) {
+			pkt.contents.rcvd_cnts = "Server Error";
+			return -2;
 		}
 
 		pkt.contents.rcvd_cnts = temp;
-
-		delete pstmt;
-		delete res;
 
 		return 0;
 

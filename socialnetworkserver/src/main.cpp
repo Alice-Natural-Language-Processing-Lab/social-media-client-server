@@ -44,8 +44,8 @@ int main() {
 		//test_getResults(database);
 		//test_hasValidSession(database);
 		test_login(database);
-		test_listUsers(database);
-		//test_showWall(database);
+		//test_listUsers(database);
+		test_showWall(database);
 		getchar();
 		//getline(cin, input);
 		//cout << hash_func(input);
@@ -109,14 +109,20 @@ void test_listUsers(MySQLDatabaseInterface& database) {
 
 void test_showWall(MySQLDatabaseInterface& database) {
 
-	test_packet1.contents.wallOwner = "sam";
-	test_packet2.contents.wallOwner = "sauron";
+	test_packet1.contents.wallOwner = "alex";
 
 	database.showWall(test_packet1);
 	cout << "test_packet1:\n" << test_packet1.contents.rcvd_cnts << endl;
 
-	database.showWall(test_packet2);
-	cout << "test_packet2:\n" << test_packet2.contents.rcvd_cnts << endl;
+	test_packet1.contents.wallOwner = "cris";
+
+	database.showWall(test_packet1);
+	cout << "test_packet2:\n" << test_packet1.contents.rcvd_cnts << endl;
+
+	test_packet1.contents.wallOwner = "ben";
+
+	database.showWall(test_packet1);
+	cout << "test_packet3:\n" << test_packet1.contents.rcvd_cnts << endl;
 }
 
 size_t hash_func(string input) {
