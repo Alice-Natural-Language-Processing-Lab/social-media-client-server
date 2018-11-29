@@ -1,9 +1,3 @@
-/*
- * writeProcess.cpp
- *
- *  Created on: Nov 14, 2018
- *      Author: pournami
- */
 
 #include <sys/socket.h>
 #include <netinet/in.h>
