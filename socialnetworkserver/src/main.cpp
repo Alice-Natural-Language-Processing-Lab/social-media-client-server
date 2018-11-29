@@ -9,8 +9,6 @@
 #include <stdio.h>
 #include <cstdlib>
 #include <string>
-#include <iostream>
-#include <tr1/functional>
 
 #include "mysql_lib.h"
 
@@ -27,7 +25,6 @@ void test_login(MySQLDatabaseInterface& database);
 void test_listUsers(MySQLDatabaseInterface& database);
 void test_showWall(MySQLDatabaseInterface& database);
 void test_postOnWall(MySQLDatabaseInterface& database);
-size_t hash_func(string input);
 
 packet test_packet1, test_packet2, test_packet3;
 
@@ -140,10 +137,4 @@ void test_postOnWall(MySQLDatabaseInterface& database) {
 
 	database.postOnWall(test_packet1);
 	cout << "test_packet1:\n" << test_packet1.contents.rcvd_cnts << endl;
-}
-
-size_t hash_func(string input) {
-
-	std::tr1::hash<std::string> str_hash;
-	return str_hash(input);
 }

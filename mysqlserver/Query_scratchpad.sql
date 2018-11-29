@@ -64,11 +64,15 @@ values  ('alex', '17663506432727786073'), ('ben', '12927111708687947557'),
         ('quinton', '4523305108125428409'), ('roger', '18264053755285864037'),
         ('sam', '9499914711864451609'), ('tom', '10229820929279828485');
         
+/*
 insert into SocialNetwork.Posts (posterUserID, posteeUserID, timestamp, content)
 values (1, 2, '2018-11-07', "Hello friends, how's it going?"), (2, 2, '2018-11-08', "Super political post");
+*/
 
+/*
 insert into SocialNetwork.Notifications (postID, userID, `read`, timestamp)
 values (1, 1, 0, '2018-11-07 00:00:00'), (2,2,0,'2018-11-07');
+*/
 
 /*
 insert into SocialNetwork.InteractionLog (userID, sessionID, timestamp, logout, socketDescriptor, command)

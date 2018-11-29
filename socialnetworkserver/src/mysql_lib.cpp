@@ -344,7 +344,7 @@ int MySQLDatabaseInterface::showWall(struct packet &pkt) {
 
 int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
 
-	unsigned int poster_id, post_id;
+	unsigned int poster_id, post_id, last_insert_id;
 	try {
 		/*
 		 * determine poster_id and attempt inserting post.
@@ -371,11 +371,23 @@ int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
 		}
 
 		delete pstmt;
-		//post successful
+		//post made successfully
+
 		//insert post and users into notifications table
+		//get newly created post_id
+		stmt = con->createStatement();
+		res = stmt->executeQuery("select last_insert_id() as last_insert_id");
+		res->first();
+		last_insert_id = res->getUInt("last_insert_id");
+
+		delete stmt;
+		delete res;
+
 		pstmt =
 				con->prepareStatement(
-						"insert into Notifications (postID, userID) select last_insert_id(), userID from Users");
+						"insert into Notifications (postID, userID) select ?, userID from Users");
+		pstmt->setUInt(1, last_insert_id);
+
 		if (pstmt->executeUpdate() < 1) {
 			pkt.contents.rcvd_cnts = "Server Error";
 			return -2;
@@ -385,7 +397,8 @@ int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
 
 		// command: POST alex 6 - get post_ID for the interaction log
 		insertInteractionLog(pkt.sessionId, false,
-				"POST " + pkt.contents.postee);
+				"POST " + pkt.contents.postee + " "
+						+ std::to_string(last_insert_id));
 
 		return 0;
 
