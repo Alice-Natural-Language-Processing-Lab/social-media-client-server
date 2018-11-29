@@ -344,27 +344,48 @@ int MySQLDatabaseInterface::showWall(struct packet &pkt) {
 
 int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
 
-	unsigned int temp_postee_id;
+	unsigned int poster_id, post_id;
 	try {
 		/*
-		 * may not need this
-		 * USe this instead:
-		 * insert into Posts (posterUserID, posteeUserID, content) select poster.userID, postee.userID, "contentstuff" from Users poster join Users postee where poster.userName = "alex" and postee.userName = "cris"
+		 * determine poster_id and attempt inserting post.
+		 * If successful, then postee exists and post has been made
 		 */
-		//check if postee user exists
-		switch (getUserID(pkt.contents.postee, &temp_postee_id)) {
-		case 0:
-			//user exists
-			break;
-		case -1:
-			pkt.contents.rcvd_cnts = "User doesn't exist";
-			return -1;
-			break;
-		case -2:
+		if (hasValidSession(pkt, &poster_id) != 0) {
+
 			pkt.contents.rcvd_cnts = "Server Error";
 			return -2;
-			break;
 		}
+
+		pstmt =
+				con->prepareStatement(
+						"insert into Posts (posterUserID, posteeUserID, content) select ?, postee.userID, ? from Users postee where postee.userName = ?");
+		pstmt->setUInt(1, poster_id);
+		pstmt->setString(2, pkt.contents.post);
+		pstmt->setString(3, pkt.contents.postee);
+
+		if (pstmt->executeUpdate() != 1) {
+			//postee user doesn't exist
+			delete pstmt;
+			pkt.contents.rcvd_cnts = "User doesn't exist";
+			return -1;
+		}
+
+		delete pstmt;
+		//post successful
+		//insert post and users into notifications table
+		pstmt =
+				con->prepareStatement(
+						"insert into Notifications (postID, userID) select last_insert_id(), userID from Users");
+		if (pstmt->executeUpdate() < 1) {
+			pkt.contents.rcvd_cnts = "Server Error";
+			return -2;
+		}
+
+		delete pstmt;
+
+		// command: POST alex 6 - get post_ID for the interaction log
+		insertInteractionLog(pkt.sessionId, false,
+				"POST " + pkt.contents.postee);
 
 		return 0;
 

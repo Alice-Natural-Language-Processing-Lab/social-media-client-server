@@ -27,7 +27,7 @@ CREATE TABLE `SocialNetwork`.`Notifications` (
   `notificationID` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
   `postID` smallint(5) unsigned NOT NULL,
   `userID` smallint(5) unsigned NOT NULL,
-  `read` boolean NOT NULL,
+  `read` boolean NOT NULL DEFAULT 0,
   `timestamp` datetime NOT NULL DEFAULT NOW(),
   PRIMARY KEY (`notificationID`),
   UNIQUE KEY `notificationID_UNIQUE` (`notificationID`),

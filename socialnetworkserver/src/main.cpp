@@ -44,10 +44,10 @@ int main() {
 	while (true) {
 		//test_getResults(database);
 		test_login(database);
-		test_hasValidSession(database);
+		//test_hasValidSession(database);
 		//test_listUsers(database);
-		test_showWall(database);
 		test_postOnWall(database);
+		test_showWall(database);
 		getchar();
 		//getline(cin, input);
 		//cout << hash_func(input);
