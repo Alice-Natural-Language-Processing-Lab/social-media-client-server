@@ -28,6 +28,8 @@ void test_listUsers(MySQLDatabaseInterface& database);
 void test_showWall(MySQLDatabaseInterface& database);
 size_t hash_func(string input);
 
+packet test_packet1, test_packet2, test_packet3;
+
 int main() {
 
 	MySQLDatabaseDriver databaseDriver;
@@ -42,7 +44,7 @@ int main() {
 		//test_getResults(database);
 		//test_hasValidSession(database);
 		test_login(database);
-		//test_listUsers(database);
+		test_listUsers(database);
 		//test_showWall(database);
 		getchar();
 		//getline(cin, input);
@@ -55,7 +57,6 @@ int main() {
 void test_hasValidSession(MySQLDatabaseInterface& database) {
 
 	string timeout;
-	packet test_packet1, test_packet2;
 	test_packet1.sessionId = 3456789012;
 	test_packet2.sessionId = 2345678901;
 
@@ -79,7 +80,6 @@ void test_getResults(MySQLDatabaseInterface& database) {
 void test_login(MySQLDatabaseInterface& database) {
 
 	unsigned int socket_descriptor_test = 5;
-	packet test_packet1, test_packet2, test_packet3;
 	test_packet1.contents.username = "alex";
 	test_packet1.contents.password = "17663506432727786073";
 	test_packet2.contents.username = "sam";
@@ -103,15 +103,12 @@ void test_login(MySQLDatabaseInterface& database) {
 
 void test_listUsers(MySQLDatabaseInterface& database) {
 
-	packet test_packet1;
-
 	database.listUsers(test_packet1);
 	cout << "test_packet1:\n" << test_packet1.contents.rcvd_cnts << endl;
 }
 
 void test_showWall(MySQLDatabaseInterface& database) {
 
-	packet test_packet1, test_packet2;
 	test_packet1.contents.wallOwner = "sam";
 	test_packet2.contents.wallOwner = "sauron";
 

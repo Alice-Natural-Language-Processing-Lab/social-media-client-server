@@ -24,61 +24,6 @@ MySQLDatabaseDriver::MySQLDatabaseDriver() {
 MySQLDatabaseDriver::~MySQLDatabaseDriver() {
 }
 
-void MySQLDatabaseInterface::printResults() {
-
-	int column_count, initial_row = res->getRow();
-	res->beforeFirst();
-	result_set_meta_data = res->getMetaData();
-	column_count = result_set_meta_data->getColumnCount();
-	std::cout << "\nResults:\n";
-	do {
-		for (int i = 1; i <= column_count; i++) {
-			if (res->isBeforeFirst())
-				std::cout << "\t" << result_set_meta_data->getColumnName(i);
-			else
-				std::cout << "\t" << res->getString(i);
-		}
-		std::cout << std::endl;
-	} while (res->next());
-	std::cout << std::endl;
-	res->absolute(initial_row);
-}
-
-int MySQLDatabaseInterface::insertInteractionLog(unsigned int user_id,
-		unsigned int session_id, bool logout, unsigned int socket_descriptor,
-		std::string command) {
-
-	try {
-		pstmt =
-				con->prepareStatement(
-						"insert into InteractionLog (userID, sessionID, logout, socketDescriptor, command) values (?, ?, ?, ?, ?)");
-		pstmt->setUInt(1, user_id);
-		pstmt->setUInt(2, session_id);
-		pstmt->setBoolean(3, logout);
-		pstmt->setUInt(4, socket_descriptor);
-		pstmt->setString(5, command);
-
-		if (pstmt->executeUpdate() != 1) {
-			//more or less than 1 row was affected - error condition
-			delete pstmt;
-			return -2;
-		}
-
-		delete pstmt;
-		return 0;
-
-	} catch (sql::SQLException &e) {
-		std::cout << "# ERR: SQLException in " << __FILE__;
-		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
-				<< std::endl;
-		std::cout << "# ERR: " << e.what();
-		std::cout << " (MySQL error code: " << e.getErrorCode();
-		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
-
-		return -2;
-	}
-}
-
 MySQLDatabaseInterface::MySQLDatabaseInterface(
 		MySQLDatabaseDriver* databaseDriver, std::string server_url,
 		std::string server_username, std::string server_password,
@@ -217,27 +162,21 @@ int MySQLDatabaseInterface::login(struct packet &pkt,
 			//printResults();
 
 			if (res->rowsCount() == 0) {
-				//session_id doesn't exist in table, use this session id
+				//session_id doesn't already exist in table, use this session id
 				valid_session_id = true;
 			}
 			delete res;
 		}
 		delete pstmt;
 
-		//insert row in interaction log (can probably make a function for this)
+		//insert row in interaction log
 		//how to make sure another thread doesn't generate same sessionid and update concurrently? - mainly relying on low probability, similar approach is used for session ids in the wild
-		insertInteractionLog(temp_user_id, temp_session_id, false,
-				socket_descriptor, "LOGIN " + pkt.contents.username);
-
-		pstmt =
-				con->prepareStatement(
-						"insert into InteractionLog (userID, sessionID, logout, socketDescriptor, command) values (?, ?, 0, ?, ?)");
-		pstmt->setUInt(1, temp_user_id);
-		pstmt->setUInt(2, temp_session_id);
-		pstmt->setUInt(3, socket_descriptor);
-		pstmt->setString(4, "LOGIN " + pkt.contents.username);
-		pstmt->executeUpdate();
-		delete pstmt;
+		if (insertInteractionLog(temp_session_id, false,
+				"LOGIN " + pkt.contents.username, temp_user_id,
+				socket_descriptor) != 0) {
+			pkt.contents.rcvd_cnts = "Server Error";
+			return -2;
+		}
 
 		//write session id back to packet and return 0
 		pkt.sessionId = temp_session_id;
@@ -269,6 +208,16 @@ int MySQLDatabaseInterface::listUsers(struct packet &pkt) {
 
 		//printResults();
 
+		if (res->rowsCount() < 1) {
+			//SQL not returning users
+			delete stmt;
+			delete res;
+
+			pkt.contents.rcvd_cnts = "Server Error";
+			return -2;
+		}
+
+		//format results
 		while (res->next()) {
 			temp += std::to_string(res->getRow()) + " - "
 					+ res->getString("userName");
@@ -276,11 +225,15 @@ int MySQLDatabaseInterface::listUsers(struct packet &pkt) {
 				temp += "\n";
 			}
 		}
-
-		pkt.contents.rcvd_cnts = temp;
-
 		delete stmt;
 		delete res;
+
+		if (insertInteractionLog(pkt.sessionId, false, "LIST") != 0) {
+			pkt.contents.rcvd_cnts = "Server Error";
+			return -2;
+		}
+
+		pkt.contents.rcvd_cnts = temp;
 
 		return 0;
 
@@ -382,6 +335,91 @@ int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
 int MySQLDatabaseInterface::logout(struct packet& pkt) {
 
 	return 0;
+}
+
+void MySQLDatabaseInterface::printResults() {
+
+	int column_count, initial_row = res->getRow();
+	res->beforeFirst();
+	result_set_meta_data = res->getMetaData();
+	column_count = result_set_meta_data->getColumnCount();
+	std::cout << "\nResults:\n";
+	do {
+		for (int i = 1; i <= column_count; i++) {
+			if (res->isBeforeFirst())
+				std::cout << "\t" << result_set_meta_data->getColumnName(i);
+			else
+				std::cout << "\t" << res->getString(i);
+		}
+		std::cout << std::endl;
+	} while (res->next());
+	std::cout << std::endl;
+	res->absolute(initial_row);
+}
+
+int MySQLDatabaseInterface::insertInteractionLog(unsigned int session_id,
+		bool logout, std::string command, unsigned int user_id,
+		unsigned int socket_descriptor) {
+
+	try {
+		if (user_id == 0 || socket_descriptor == 0) {
+			//need to query for these if they aren't passed in
+			pstmt =
+					con->prepareStatement(
+							"SELECT * FROM SocialNetwork.InteractionLog WHERE sessionID = ? ORDER BY TIMESTAMP DESC LIMIT 1");
+			pstmt->setUInt(1, session_id);
+			res = pstmt->executeQuery();
+
+			if (res->rowsCount() != 1) {
+				//session_id not valid
+				delete pstmt;
+				delete res;
+
+				return -2;
+			}
+
+			res->first();
+			if (user_id == 0) {
+				user_id = res->getUInt("userID");
+			}
+			if (socket_descriptor == 0) {
+				socket_descriptor = res->getUInt("socketDescriptor");
+			}
+
+			delete pstmt;
+			delete res;
+		}
+
+		pstmt =
+				con->prepareStatement(
+						"insert into InteractionLog (userID, sessionID, logout, socketDescriptor, command) values (?, ?, ?, ?, ?)");
+		pstmt->setUInt(1, user_id);
+		pstmt->setUInt(2, session_id);
+		pstmt->setBoolean(3, logout);
+		pstmt->setUInt(4, socket_descriptor);
+		pstmt->setString(5, command);
+
+		if (pstmt->executeUpdate() != 1) {
+			//more or less than 1 row was affected - error condition
+			delete pstmt;
+			return -2;
+		}
+
+		delete pstmt;
+		return 0;
+
+	} catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+
+		return -2;
+	}
+
+	return -2;
 }
 
 Notifications::Notifications(MySQLDatabaseInterface* dbInterface) {

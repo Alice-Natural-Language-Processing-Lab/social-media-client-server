@@ -40,32 +40,6 @@ class MySQLDatabaseInterface {
 	 * Call this in each client handler thread that needs to connect to the database.
 	 * It handles database connections only within a thread.
 	 */
-private:
-	sql::Driver* driver;
-	sql::Connection* con;
-	sql::Statement* stmt;
-	sql::PreparedStatement* pstmt;
-	sql::ResultSet* res;
-	sql::ResultSetMetaData* result_set_meta_data;
-
-	void printResults();
-	/*
-	 * Used for testing
-	 * Prints existing resultset in a table format. Can only be called once a
-	 * result set has been generated. Restores the result set state before returning
-	 */
-
-	int insertInteractionLog(unsigned int user_id, unsigned int session_id,
-			bool logout, unsigned int socket_descriptor, std::string command);
-	/*
-	 * Used for updating InteractionLog
-	 * Should only be called after existing statements, prepared statements,
-	 * or result sets have been deleted as this modifies the private prepared statement
-	 * and result set variables. Creates own prepared statements for updating database.
-	 *
-	 * Returns 0 if successful, returns -2 if unintended SQL behavior/server error
-	 */
-
 public:
 	int session_timeout = 15; // in minutes between 0 and 59
 	unsigned int session_id_max = UINT_MAX;
@@ -143,6 +117,33 @@ public:
 	 */
 
 	int logout(struct packet& pkt);
+
+private:
+	sql::Driver* driver;
+	sql::Connection* con;
+	sql::Statement* stmt;
+	sql::PreparedStatement* pstmt;
+	sql::ResultSet* res;
+	sql::ResultSetMetaData* result_set_meta_data;
+
+	void printResults();
+	/*
+	 * Used for testing
+	 * Prints existing resultset in a table format. Can only be called once a
+	 * result set has been generated. Restores the result set state before returning
+	 */
+
+	int insertInteractionLog(unsigned int session_id, bool logout,
+			std::string command, unsigned int user_id = 0,
+			unsigned int socket_descriptor = 0);
+	/*
+	 * Used for updating InteractionLog
+	 * Should only be called after existing statements, prepared statements,
+	 * or result sets have been deleted as this modifies the private prepared statement
+	 * and result set variables. Creates own prepared statements for updating database.
+	 *
+	 * Returns 0 if successful, returns -2 if unintended SQL behavior/server error
+	 */
 };
 
 class Notifications {
@@ -155,9 +156,6 @@ class Notifications {
 	 *
 	 * This object should only be used within the notifications thread
 	 */
-private:
-	MySQLDatabaseInterface* databaseInterface;
-
 public:
 	Notifications(MySQLDatabaseInterface* dbInterface);
 	~Notifications();
@@ -184,6 +182,9 @@ public:
 	 * Marks the current notification as read (acknowledged by client code).
 	 * Returns 0 if successful.
 	 */
+
+private:
+	MySQLDatabaseInterface* databaseInterface;
 };
 
 #endif /* MYSQL_LIB_H_ */
