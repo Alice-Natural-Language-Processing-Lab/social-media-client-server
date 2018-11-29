@@ -62,9 +62,13 @@ public:
 	 * -1 if unsuccessful. If unsuccessful, rcvd_cnts will also contain an error message.
 	 */
 
-	int hasValidSession(struct packet& pkt);
+	int hasValidSession(struct packet& pkt, unsigned int* user_id = NULL,
+			unsigned int* socket_descriptor = NULL);
 	/*
-	 * This function checks if the session in the packet is valid based on session_timeout,
+	 * This function checks if the session in the packet is valid based on session_timeout
+	 * and logout status. If the session is valid and variables are passed in,
+	 * the function can return the user_id and socket_descriptor associated with the session.
+	 *
 	 * returns:
 	 * 0 if valid
 	 * -1 for invalid session and modifies packet to have error message

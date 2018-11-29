@@ -43,8 +43,8 @@ int main() {
 
 	while (true) {
 		//test_getResults(database);
-		//test_hasValidSession(database);
 		test_login(database);
+		test_hasValidSession(database);
 		//test_listUsers(database);
 		test_showWall(database);
 		test_postOnWall(database);
@@ -58,12 +58,12 @@ int main() {
 
 void test_hasValidSession(MySQLDatabaseInterface& database) {
 
-	string timeout;
-	test_packet1.sessionId = 3456789012;
-	test_packet2.sessionId = 2345678901;
+	//string timeout;
+	//test_packet1.sessionId = 3456789012;
+	//test_packet2.sessionId = 2345678901;
 
-	getline(cin, timeout);
-	database.session_timeout = atoi(timeout.c_str());
+	//getline(cin, timeout);
+	//database.session_timeout = atoi(timeout.c_str());
 
 	cout << "test packet1:" << database.hasValidSession(test_packet1) << "\n"
 			<< test_packet1.contents.rcvd_cnts << endl;

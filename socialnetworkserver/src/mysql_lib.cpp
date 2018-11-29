@@ -68,7 +68,8 @@ void MySQLDatabaseInterface::getResults(std::string query) {
 	}
 }
 
-int MySQLDatabaseInterface::hasValidSession(struct packet& pkt) {
+int MySQLDatabaseInterface::hasValidSession(struct packet& pkt,
+		unsigned int* user_id, unsigned int* socket_descriptor) {
 
 	/*
 	 * query the database for a matching session from the most recent row
@@ -87,17 +88,34 @@ int MySQLDatabaseInterface::hasValidSession(struct packet& pkt) {
 		res = pstmt->executeQuery();
 
 		//printResults();
-		if (res->rowsCount() > 0) {
+		switch (res->rowsCount()) {
+		case 1:
 			//valid session
+			if (user_id != NULL) {
+				res->first();
+				*user_id = res->getUInt("userID");
+			}
+			if (socket_descriptor != NULL) {
+				res->first();
+				*socket_descriptor = res->getUInt("socketDescriptor");
+			}
+
 			delete pstmt;
 			delete res;
 			return 0;
-		} else {
+			break;
+		case 0:
 			//invalid session
-			pkt.contents.rcvd_cnts = "Invalid Session";
 			delete pstmt;
 			delete res;
+			pkt.contents.rcvd_cnts = "Invalid Session";
 			return -1;
+			break;
+		default:
+			delete pstmt;
+			delete res;
+			pkt.contents.rcvd_cnts = "Server Error";
+			return -2;
 		}
 
 	} catch (sql::SQLException &e) {
@@ -326,10 +344,15 @@ int MySQLDatabaseInterface::showWall(struct packet &pkt) {
 
 int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
 
-	unsigned int temp_user_id;
+	unsigned int temp_postee_id;
 	try {
+		/*
+		 * may not need this
+		 * USe this instead:
+		 * insert into Posts (posterUserID, posteeUserID, content) select poster.userID, postee.userID, "contentstuff" from Users poster join Users postee where poster.userName = "alex" and postee.userName = "cris"
+		 */
 		//check if postee user exists
-		switch (getUserID(pkt.contents.postee, &temp_user_id)) {
+		switch (getUserID(pkt.contents.postee, &temp_postee_id)) {
 		case 0:
 			//user exists
 			break;
@@ -393,30 +416,25 @@ int MySQLDatabaseInterface::insertInteractionLog(unsigned int session_id,
 	try {
 		if (user_id == 0 || socket_descriptor == 0) {
 			//need to query for these if they aren't passed in
-			pstmt =
-					con->prepareStatement(
-							"SELECT * FROM SocialNetwork.InteractionLog WHERE sessionID = ? ORDER BY TIMESTAMP DESC LIMIT 1");
-			pstmt->setUInt(1, session_id);
-			res = pstmt->executeQuery();
+			int return_flag;
+			packet temp_packet;
+			temp_packet.sessionId = session_id;
 
-			if (res->rowsCount() != 1) {
-				//session_id not valid
-				delete pstmt;
-				delete res;
+			if (user_id == 0 && socket_descriptor == 0) {
 
+				return_flag = hasValidSession(temp_packet, &user_id,
+						&socket_descriptor);
+			} else if (user_id == 0) {
+				return_flag = hasValidSession(temp_packet, &user_id);
+			} else {
+				return_flag = hasValidSession(temp_packet, NULL,
+						&socket_descriptor);
+			}
+
+			if (return_flag != 0) {
+				//session not valid or server error => server error
 				return -2;
 			}
-
-			res->first();
-			if (user_id == 0) {
-				user_id = res->getUInt("userID");
-			}
-			if (socket_descriptor == 0) {
-				socket_descriptor = res->getUInt("socketDescriptor");
-			}
-
-			delete pstmt;
-			delete res;
 		}
 
 		pstmt =
