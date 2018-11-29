@@ -85,7 +85,6 @@ void writeThread(int sock_fd)
 int readResponse(int sock_fd, char *buffer, int resp_len)
 {
 	int sock_read;
-
 	/* Read each request stream repeatedly */
 	while (1)
 	{
@@ -143,9 +142,6 @@ int parsePacket(struct packet *resp)
  */
 int processResponse(int sock_fd, struct packet *resp)
 {
-	/*
-	 * TODO: in response is login with username invalid msg, then print the error msg
-	 */
 
 	if(resp->cmd_code == LIST || resp->cmd_code == SHOW || resp->cmd_code == NOTIFY)
 		displayContents(resp);
