@@ -48,7 +48,6 @@ int MySQLDatabaseInterface::insertInteractionLog(unsigned int user_id,
 		unsigned int session_id, bool logout, unsigned int socket_descriptor,
 		std::string command) {
 
-	implementing this function
 	try {
 		pstmt =
 				con->prepareStatement(
@@ -60,7 +59,7 @@ int MySQLDatabaseInterface::insertInteractionLog(unsigned int user_id,
 		pstmt->setString(5, command);
 
 		if (pstmt->executeUpdate() != 1) {
-			//more or less than 1 row was affected
+			//more or less than 1 row was affected - error condition
 			delete pstmt;
 			return -2;
 		}
@@ -227,6 +226,9 @@ int MySQLDatabaseInterface::login(struct packet &pkt,
 
 		//insert row in interaction log (can probably make a function for this)
 		//how to make sure another thread doesn't generate same sessionid and update concurrently? - mainly relying on low probability, similar approach is used for session ids in the wild
+		insertInteractionLog(temp_user_id, temp_session_id, false,
+				socket_descriptor, "LOGIN " + pkt.contents.username);
+
 		pstmt =
 				con->prepareStatement(
 						"insert into InteractionLog (userID, sessionID, logout, socketDescriptor, command) values (?, ?, 0, ?, ?)");

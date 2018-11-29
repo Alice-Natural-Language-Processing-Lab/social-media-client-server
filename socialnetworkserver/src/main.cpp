@@ -41,9 +41,9 @@ int main() {
 	while (true) {
 		//test_getResults(database);
 		//test_hasValidSession(database);
-		//test_login(database);
+		test_login(database);
 		//test_listUsers(database);
-		test_showWall(database);
+		//test_showWall(database);
 		getchar();
 		//getline(cin, input);
 		//cout << hash_func(input);
@@ -80,8 +80,8 @@ void test_login(MySQLDatabaseInterface& database) {
 
 	unsigned int socket_descriptor_test = 5;
 	packet test_packet1, test_packet2, test_packet3;
-	test_packet1.contents.username = "frodo";
-	test_packet1.contents.password = "baggins";
+	test_packet1.contents.username = "alex";
+	test_packet1.contents.password = "17663506432727786073";
 	test_packet2.contents.username = "sam";
 	test_packet2.contents.password = "wrongpass";
 	test_packet3.contents.username = "nousername";
