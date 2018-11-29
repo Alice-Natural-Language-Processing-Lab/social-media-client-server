@@ -1,9 +1,4 @@
-/*
- * func_lib.h
- *
- *  Created on: Nov 14, 2018
- *      Author: pournami
- */
+
 
 #ifndef FUNC_LIB_H_
 #define FUNC_LIB_H_
@@ -49,9 +44,6 @@ int readResponse(int sock_fd, char *buffer, int req_len);
 int parsePacket(struct packet *req);
 void displayContents(struct packet *resp);
 int processResponse(int sock_fd, struct packet *resp);
-
-
-
 
 
 #endif /* FUNC_LIB_H_ */
