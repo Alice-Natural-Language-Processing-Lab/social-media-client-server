@@ -187,9 +187,13 @@ public:
 	/*
 	 * queries the database for notifications to process. Returns the number of notifications
 	 * to process.
+	 *
+	 * Returns:
+	 * 0 if successful
+	 * -2 if server error
 	 */
 
-	bool next(void);
+	int next(void);
 	/*
 	 * Iterates the Notification object to the next entry. Returns true if the entry exists.
 	 * Starts on an empty "0th" entry so much be called once to get to the first entry.

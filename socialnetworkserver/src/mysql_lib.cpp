@@ -405,8 +405,7 @@ int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
 		delete pstmt;
 
 		insertInteractionLog(pkt.sessionId, false,
-				"POST " + pkt.contents.postee + " "
-						+ std::to_string(post_id));
+				"POST " + pkt.contents.postee + " " + std::to_string(post_id));
 
 		return 0;
 
@@ -609,11 +608,22 @@ Notifications::~Notifications() {
 }
 
 int Notifications::getNotifications(void) {
-
+/*
+ *This query should give me users that are eligible for notifications
+ *
+ * select distinct userID from (
+select IntLog2.*, IntLog1.userID, IntLog1.timestamp, IntLog1.logout from
+(select sessionID, max(timestamp) maxTimestamp from InteractionLog group by sessionID) IntLog2 join
+(select userID, sessionID, timestamp, logout from InteractionLog) IntLog1
+on IntLog1.sessionID = IntLog2.sessionID
+and IntLog1.timestamp = IntLog2.maxTimestamp
+where logout <>1
+and ADDTIME(TIMESTAMP, CONCAT('00:', 20 ,':00')) > NOW()) ActiveSessions
+ */
 	return 0;
 }
 
-bool Notifications::next(void) {
+int Notifications::next(void) {
 
 	return 0;
 }

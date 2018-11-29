@@ -43,7 +43,7 @@ int main() {
 		//test_listUsers(database);
 		test_postOnWall(database);
 		test_showWall(database);
-		test_logout(database);
+		//test_logout(database);
 		test_hasValidSession(database);
 		getchar();
 	}

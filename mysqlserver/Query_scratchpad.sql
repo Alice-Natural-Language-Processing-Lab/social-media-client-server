@@ -98,10 +98,11 @@ sessionID,
 row_number()/* over (partition by sessionID order by timestamp desc) as test*/
 from InteractionLog;
 
-select IntLog2.*, IntLog1.* from 
+select distinct userID from (
+select IntLog2.*, IntLog1.userID, IntLog1.timestamp, IntLog1.logout from 
 (select sessionID, max(timestamp) maxTimestamp from InteractionLog group by sessionID) IntLog2 join 
 (select userID, sessionID, timestamp, logout from InteractionLog) IntLog1 
 on IntLog1.sessionID = IntLog2.sessionID 
 and IntLog1.timestamp = IntLog2.maxTimestamp
 where logout <>1
-and ADDTIME(TIMESTAMP, CONCAT('00:', 50 ,':00')) > NOW()
+and ADDTIME(TIMESTAMP, CONCAT('00:', 20 ,':00')) > NOW()) ActiveSessions
