@@ -26,6 +26,7 @@ void test_getResults(MySQLDatabaseInterface& database);
 void test_login(MySQLDatabaseInterface& database);
 void test_listUsers(MySQLDatabaseInterface& database);
 void test_showWall(MySQLDatabaseInterface& database);
+void test_postOnWall(MySQLDatabaseInterface& database);
 size_t hash_func(string input);
 
 packet test_packet1, test_packet2, test_packet3;
@@ -46,6 +47,7 @@ int main() {
 		test_login(database);
 		//test_listUsers(database);
 		test_showWall(database);
+		test_postOnWall(database);
 		getchar();
 		//getline(cin, input);
 		//cout << hash_func(input);
@@ -123,6 +125,21 @@ void test_showWall(MySQLDatabaseInterface& database) {
 
 	database.showWall(test_packet1);
 	cout << "test_packet3:\n" << test_packet1.contents.rcvd_cnts << endl;
+}
+
+void test_postOnWall(MySQLDatabaseInterface& database) {
+
+	test_packet1.contents.postee = "cris";
+	test_packet1.contents.post = "Hey! Wanna eat some ice cream!";
+
+	database.postOnWall(test_packet1);
+	cout << "test_packet1:\n" << test_packet1.contents.rcvd_cnts << endl;
+
+	test_packet1.contents.postee = "sauron";
+	test_packet1.contents.post = "Hey! Wanna eat some ice cream!";
+
+	database.postOnWall(test_packet1);
+	cout << "test_packet1:\n" << test_packet1.contents.rcvd_cnts << endl;
 }
 
 size_t hash_func(string input) {

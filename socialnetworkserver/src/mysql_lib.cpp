@@ -258,6 +258,9 @@ int MySQLDatabaseInterface::showWall(struct packet &pkt) {
 	std::string temp;
 	try {
 		switch (getUserID(pkt.contents.wallOwner)) {
+		case 0:
+			//user exists
+			break;
 		case -1:
 			pkt.contents.rcvd_cnts = "User doesn't exist";
 			return -1;
@@ -265,9 +268,6 @@ int MySQLDatabaseInterface::showWall(struct packet &pkt) {
 		case -2:
 			pkt.contents.rcvd_cnts = "Server Error";
 			return -2;
-			break;
-		default:
-			//user exists
 			break;
 		}
 
@@ -326,7 +326,39 @@ int MySQLDatabaseInterface::showWall(struct packet &pkt) {
 
 int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
 
-	return 0;
+	unsigned int temp_user_id;
+	try {
+		//check if postee user exists
+		switch (getUserID(pkt.contents.postee, &temp_user_id)) {
+		case 0:
+			//user exists
+			break;
+		case -1:
+			pkt.contents.rcvd_cnts = "User doesn't exist";
+			return -1;
+			break;
+		case -2:
+			pkt.contents.rcvd_cnts = "Server Error";
+			return -2;
+			break;
+		}
+
+		return 0;
+
+	} catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+
+		pkt.contents.rcvd_cnts = "Server Error";
+		return -2;
+	}
+
+	pkt.contents.rcvd_cnts = "Server Error";
+	return -2;
 }
 
 int MySQLDatabaseInterface::logout(struct packet& pkt) {
@@ -419,9 +451,9 @@ int MySQLDatabaseInterface::insertInteractionLog(unsigned int session_id,
 	return -2;
 }
 
-unsigned int MySQLDatabaseInterface::getUserID(std::string user_name) {
+int MySQLDatabaseInterface::getUserID(std::string user_name,
+		unsigned int* user_id) {
 
-	unsigned int temp_user_id;
 	try {
 		//see if requested user exists
 		pstmt = con->prepareStatement("select * from Users where userName = ?");
@@ -438,13 +470,15 @@ unsigned int MySQLDatabaseInterface::getUserID(std::string user_name) {
 			return -1;
 		}
 		//user does exist, extract userID
-		res->first();
-		temp_user_id = res->getUInt("userID");
+		if (user_id != NULL) {
+			res->first();
+			*user_id = res->getUInt("userID");
+		}
 
 		delete pstmt;
 		delete res;
 
-		return temp_user_id;
+		return 0;
 
 	} catch (sql::SQLException &e) {
 		std::cout << "# ERR: SQLException in " << __FILE__;

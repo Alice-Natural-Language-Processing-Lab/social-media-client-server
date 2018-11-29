@@ -146,15 +146,15 @@ private:
 	 * Returns 0 if successful, returns -2 if unintended SQL behavior/server error
 	 */
 
-	unsigned int getUserID(std::string user_name);
+	int getUserID(std::string user_name, unsigned int* user_id = NULL);
 	/*
-	 * Used for checking if a user exists in the database
+	 * Used for checking if a user exists in the database. Passes userID back if supplied with pointer
 	 *
 	 * Should only be called after existing statements, prepared statements,
 	 * or result sets have been deleted as this modifies the private prepared statement
 	 * and result set variables. Creates own prepared statements for querying database.
 	 *
-	 * Returns userID if successful, returns -1 if user doesn't exist, returns -2 if unintended SQL behavior/server error
+	 * Returns 0 if user exists, returns -1 if user doesn't exist, returns -2 if unintended SQL behavior/server error
 	 */
 };
 
