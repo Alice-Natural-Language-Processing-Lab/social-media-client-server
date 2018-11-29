@@ -90,7 +90,7 @@ void readThread(int sock_fd)
  */
 void printCmdList()
 {
-    cout<<"Commands (Enter 0- 3)\n"<<"--------------\n";
+    cout<<"Commands (Enter 0- 4)\n"<<"--------------\n";
     cout<<"1. List all users\n";
     cout<<"2. Post to wall\n";
     cout<<"3. Show wall\n";
@@ -130,7 +130,7 @@ void post(int sock_fd)
 	}
 	else if (postWall == 2)
 	{
-		cout<<"Enter postee name: ";
+		cout<<"Whose wall: ";
 		getline(std::cin, name);
 	}
 	else
