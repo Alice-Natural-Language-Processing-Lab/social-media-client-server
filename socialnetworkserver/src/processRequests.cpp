@@ -51,7 +51,7 @@ int processRequest(int sock_fd, struct packet *req)
  */
 void userLogin(int sock_fd, struct packet req)
 {
-	int ret;
+	int ret = 0;
 
 	ret = database.login(req, sock_fd);
 	sendPacket(sock_fd, req);
@@ -77,7 +77,7 @@ void userLogin(int sock_fd, struct packet req)
  */
 void listAllUsers(int sock_fd, struct packet req)
 {
-	int ret;
+	int ret = 0;
 
 	ret = database.listUsers(req);
 	sendPacket(sock_fd, req);
@@ -97,10 +97,8 @@ void listAllUsers(int sock_fd, struct packet req)
  */
 void postMessage(int sock_fd, struct packet req)
 {
-	int ret;
+	int ret = 0;
 
-	DEBUG("postee is %s\n", req.contents.postee.c_str());
-	DEBUG("post is %s\n", req.contents.post.c_str());
 	ret = database.postOnWall(req);
 	if (ret < 0)
 	{
@@ -146,7 +144,6 @@ void userLogout(int sock_fd, struct packet req)
 {
 	int ret;
 
-	DEBUG("Terminating client connection\n");
 	ret = database.logout(req);
 	if (ret < 0)
 	{
@@ -173,6 +170,5 @@ int sendPacket(int sock_fd, struct packet &resp)
 		printf("Error (write_socket)\n");
 		return -1;
 	}
-	DEBUG("%d bytes sent\n", send_bytes);
 	return 0;
 }

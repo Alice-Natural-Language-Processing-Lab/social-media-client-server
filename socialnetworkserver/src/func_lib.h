@@ -32,13 +32,6 @@
 using namespace std;
 /* Function Declarations */
 
-static const char * commandList[] = { "LOGIN", "LOGOUT", "POST", "SHOW", "LIST", "NOTIFY", "ACK" };
-
-/* server.cpp */
-int serverInit(string port);
-int acceptConnections(int master_fd);
-void terminateClient(int slave_fd);
-
 /* processClient.cpp */
 void handleClient(int sock_fd);
 int readRequest(int sock_fd, char *buffer, int req_len);

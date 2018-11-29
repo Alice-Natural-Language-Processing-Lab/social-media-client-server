@@ -13,13 +13,6 @@ extern MySQLDatabaseInterface database;
 
 using namespace std;
 
-#define DEBUG
-
-const char * getCommand(int enumVal)
-{
-  return commandList[enumVal];
-}
-
 /*
  * handleClient() - handle each client connection
  * sock_fd: slave socket file descriptor
@@ -51,28 +44,24 @@ void handleClient(int sock_fd)
 			printf("Error (parsePacket): Packet parsing/checking failed\n");
 			break;
 		}
-		DEBUG("Request received: ");
-		DEBUG("%d | %s | %d | %u\n", req.content_len, getCommand(req.cmd_code), req.req_num, req.sessionId);
 
 		/* Validate session of the client */
 		ret = sessionValidity(&req);
 		if (ret < 0)
 		{
-			printf("Error (sessionValidity): session validity could not be established\n");
 			sendPacket(sock_fd, req);
+			if (ret == -2)
+				printf("Error (sessionValidity): DB could not process session validity\nClosing Client Connection\n");
 			break;
 		}
 
 		/* process the request */
 		ret = processRequest(sock_fd, &req);
 		if (ret < 0)
-		{
-			printf("Error (processRequest): request processing failed\n");
 			break;
-		}
 	}
-	DEBUG("Client connection closed\n");
 	destroy_socket(sock_fd);
+	pthread_exit(NULL);
 	return;
 }
 
@@ -83,7 +72,6 @@ void handleClient(int sock_fd)
  */
 int parsePacket(struct packet *req)
 {
-	DEBUG("Parsing Packet\n");
 	switch (req->cmd_code)
 	{
 	case LOGIN:
@@ -114,7 +102,6 @@ int parsePacket(struct packet *req)
  */
 int sessionValidity(struct packet *req)
 {
-	DEBUG("Checking session validity\n");
 	int ret = 0;
 	if (req->cmd_code != LOGIN)
 		ret = database.hasValidSession(*req);

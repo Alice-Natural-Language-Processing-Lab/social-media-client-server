@@ -15,7 +15,7 @@
 #define SERVER_USERNAME "root"
 #define SERVER_PASSWORD "asdfgh"
 #define SERVER_DATABASE "SocialNetwork"
-#define DEBUG
+
 using namespace std;
 
 pthread_cond_t notify_cond = PTHREAD_COND_INITIALIZER;
@@ -28,7 +28,7 @@ MySQLDatabaseInterface database(&databaseDriver, SERVER_URL, SERVER_USERNAME,
 int main(int argc, char *argv[])
 {
 	int port = 5354;
-	int master_fd, accept_conn;
+	int master_fd;
 	pthread_t notifyThread, clientThread;
 	pthread_attr_t attr;
 	int create_thrd, slave_fd;
@@ -45,14 +45,12 @@ int main(int argc, char *argv[])
 			printf("Error: Usage is ./<executable> [port]\n");
 			return -1;
 	}
-	DEBUG("calling create socket\n");
 	master_fd = create_server_socket(port);
 	if (master_fd < 0)
 	{
 		printf("Error (create_server_socket): Socket creation error\n");
 		return -1;
 	}
-	DEBUG("socket created\n");
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	ret = pthread_create(&notifyThread, &attr, (void * (*) (void *)) processNotification, NULL);
@@ -61,19 +59,17 @@ int main(int argc, char *argv[])
 		printf("Error (pthread_create): %s\n", strerror(errno));
 		return -1;
 	}
-	DEBUG("notify thread created\n");
 	while(1)
 	{
 		/* Accept client requests */
 		slave_fd = accept_socket(master_fd);
 		if (slave_fd < 0)
 		{
-			if (slave_fd == EINTR)
+			if (slave_fd == EINTR) /* ignore the interrupts */
 				continue;
-			printf("Error (accept): %s\n", strerror(errno));
+			printf("Error (accept_socket)\n");
 			return -1;
 		}
-		DEBUG("accept()\n");
 		/* Create thread for each client */
 		create_thrd = pthread_create(&clientThread, &attr, (void * (*) (void *)) handleClient, (void *)((long) slave_fd));
 		if (create_thrd < 0)

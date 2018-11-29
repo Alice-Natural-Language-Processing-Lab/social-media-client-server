@@ -219,7 +219,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 			break;
 	}
 	if(bufferHead == NULL || totalRead == 0) {
-		//fprintf(stderr, "Packet Read is NULL\n");
 		free(bufferHead);
 		return 0;
 	}
@@ -235,8 +234,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	}
 	string component = pktString.substr(startIndex + 12, endIndex - startIndex - 12);
 	pkt.content_len = (unsigned int) stoi(component);
-	//prints are for debug purposes
-	//printf("content_len:%u\n", pkt.content_len);
 
 	startIndex = pktString.find(",cmd_code:", endIndex);	//next component start
 	endIndex = pktString.find(",req_num:", startIndex);	//next component end
@@ -246,7 +243,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	}
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
 	pkt.cmd_code = static_cast<commands>(stoi(component));
-	//printf("cmd_code:%d\n", pkt.cmd_code);
 
 	startIndex = pktString.find(",req_num:", endIndex);
 	endIndex = pktString.find(",sessionId:", startIndex);
@@ -256,7 +252,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	}
 	component = pktString.substr(startIndex + 9, endIndex - startIndex - 9);
 	pkt.req_num = (unsigned int) stoul(component);
-	//printf("req_num:%u\n", pkt.req_num);
 
 	startIndex = pktString.find(",sessionId:", endIndex);
 	endIndex = pktString.find(",username:", startIndex);
@@ -266,7 +261,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	}
 	component = pktString.substr(startIndex + 11, endIndex - startIndex - 11);
 	pkt.sessionId = (unsigned int) stoul(component);
-	//printf("sessionId:%u\n", pkt.sessionId);
 
 	startIndex = pktString.find(",username:", endIndex);
 	endIndex = pktString.find(",password:", startIndex);
@@ -277,7 +271,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
 	if (component.length() > 0)
 		pkt.contents.username = component;
-	//printf("username:%s\n", pkt.contents.username.c_str());
 
 	startIndex = pktString.find(",password:", endIndex);
 	endIndex = pktString.find(",postee:", startIndex);
@@ -288,7 +281,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
 	if (component.length() > 0)
 		pkt.contents.password = component;
-	//printf("password:%s\n", pkt.contents.password.c_str());
 
 	startIndex = pktString.find(",postee:", endIndex);
 	endIndex = pktString.find(",post:", startIndex);
@@ -299,7 +291,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 8, endIndex - startIndex - 8);
 	if (component.length() > 0)
 		pkt.contents.postee = component;
-	//printf("postee:%s\n", pkt.contents.postee.c_str());
 
 	startIndex = pktString.find(",post:", endIndex);
 	endIndex = pktString.find(",wallOwner:", startIndex);
@@ -310,7 +301,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 6, endIndex - startIndex - 6);
 	if (component.length() > 0)
 		pkt.contents.post = component;
-	//printf("post:%s\n", pkt.contents.post.c_str());
 
 	startIndex = pktString.find(",wallOwner:", endIndex);
 	endIndex = pktString.find(",rcvd_cnts:", startIndex);
@@ -321,7 +311,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 11, endIndex - startIndex - 11);
 	if (component.length() > 0)
 		pkt.contents.wallOwner = component;
-	//printf("wallOwner:%s\n", pkt.contents.wallOwner.c_str());
 
 	startIndex = pktString.find(",rcvd_cnts:", endIndex);
 	if(startIndex == -1) {
@@ -331,7 +320,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 11, packetLength - startIndex - 11);
 	if (component.length() > 0)
 		pkt.contents.rcvd_cnts = component;
-	//printf("rcvd_cnts:%s\n", pkt.contents.rcvd_cnts.c_str());
 
 	return totalRead;
 }

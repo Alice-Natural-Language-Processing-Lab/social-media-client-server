@@ -40,30 +40,6 @@ class MySQLDatabaseInterface {
 	 * Call this in each client handler thread that needs to connect to the database.
 	 * It handles database connections only within a thread.
 	 */
-private:
-	sql::Driver* driver;
-	sql::Connection* con;
-	sql::Statement* stmt;
-	sql::PreparedStatement* pstmt;
-	sql::ResultSet* res;
-	sql::ResultSetMetaData* result_set_meta_data;
-
-	void printResults();
-	/*
-	 * Used for testing
-	 * Prints existing resultset in a table format. Can only be called once a
-	 * result set has been generated. Restores the result set state before returning
-	 */
-
-	void insertInteractionLog(std::string user_name, unsigned int session_id,
-			bool logout, int socket_descriptor, std::string command);
-	/*
-	 * Used for updating InteractionLog
-	 * Should only be called after existing statements, prepared statements,
-	 * or result sets have been deleted as this modifies the private prepared statement
-	 * and result set variables. Creates own prepared statements for updating database.
-	 */
-
 public:
 	int session_timeout = 15; // in minutes between 0 and 59
 	unsigned int session_id_max = UINT_MAX;
@@ -86,16 +62,20 @@ public:
 	 * -1 if unsuccessful. If unsuccessful, rcvd_cnts will also contain an error message.
 	 */
 
-	int hasValidSession(struct packet& pkt);
+	int hasValidSession(struct packet& pkt, unsigned int* user_id = NULL,
+			unsigned int* socket_descriptor = NULL);
 	/*
-	 * This function checks if the session in the packet is valid based on session_timeout,
+	 * This function checks if the session in the packet is valid based on session_timeout
+	 * and logout status. If the session is valid and variables are passed in,
+	 * the function can return the user_id and socket_descriptor associated with the session.
+	 *
 	 * returns:
 	 * 0 if valid
 	 * -1 for invalid session and modifies packet to have error message
 	 * -2 for server error and modifies packet to have error message
 	 */
 
-	int login(struct packet& pkt, int socket_descriptor);
+	int login(struct packet& pkt, unsigned int socket_descriptor);
 	/*
 	 * Checks if username and password exist in the table. If so, generates
 	 * a valid sessionID and writes that ID to the packet and returns 0.
@@ -141,6 +121,45 @@ public:
 	 */
 
 	int logout(struct packet& pkt);
+
+private:
+	sql::Driver* driver;
+	sql::Connection* con;
+	sql::Statement* stmt;
+	sql::PreparedStatement* pstmt;
+	sql::ResultSet* res;
+	sql::ResultSetMetaData* result_set_meta_data;
+
+	void printResults();
+	/*
+	 * Used for testing
+	 * Prints existing resultset in a table format. Can only be called once a
+	 * result set has been generated. Restores the result set state before returning
+	 */
+
+	int insertInteractionLog(unsigned int session_id, bool logout,
+			std::string command, unsigned int user_id = 0,
+			unsigned int socket_descriptor = 0);
+	/*
+	 * Used for updating InteractionLog
+	 *
+	 * Should only be called after existing statements, prepared statements,
+	 * or result sets have been deleted as this modifies the private prepared statement
+	 * and result set variables. Creates own prepared statements for updating database.
+	 *
+	 * Returns 0 if successful, returns -2 if unintended SQL behavior/server error
+	 */
+
+	int getUserID(std::string user_name, unsigned int* user_id = NULL);
+	/*
+	 * Used for checking if a user exists in the database. Passes userID back if supplied with pointer
+	 *
+	 * Should only be called after existing statements, prepared statements,
+	 * or result sets have been deleted as this modifies the private prepared statement
+	 * and result set variables. Creates own prepared statements for querying database.
+	 *
+	 * Returns 0 if user exists, returns -1 if user doesn't exist, returns -2 if unintended SQL behavior/server error
+	 */
 };
 
 class Notifications {
@@ -153,9 +172,6 @@ class Notifications {
 	 *
 	 * This object should only be used within the notifications thread
 	 */
-private:
-	MySQLDatabaseInterface* databaseInterface;
-
 public:
 	Notifications(MySQLDatabaseInterface* dbInterface);
 	~Notifications();
@@ -182,6 +198,9 @@ public:
 	 * Marks the current notification as read (acknowledged by client code).
 	 * Returns 0 if successful.
 	 */
+
+private:
+	MySQLDatabaseInterface* databaseInterface;
 };
 
 #endif /* MYSQL_LIB_H_ */
