@@ -34,7 +34,7 @@ void handleClient(int sock_fd)
 			printf("Error(read_socket)\n");
 			break;
 		}
-		if (!sock_read)
+		if (!sock_read) /*Client connection EOF */
 			break;
 
 		/* Parse the packet for valid packet structure */

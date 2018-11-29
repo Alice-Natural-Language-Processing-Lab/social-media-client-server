@@ -121,6 +121,13 @@ public:
 	 */
 
 	int logout(struct packet& pkt);
+	/*
+	 * Marks the user as logged out. This invalidates the session id
+	 *
+	 * If successful, returns 0
+	 * Otherwise:
+	 * returns -2 if server error and writes error message to rcvd_cnts
+	 */
 
 private:
 	sql::Driver* driver;

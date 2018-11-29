@@ -51,10 +51,15 @@ int processRequest(int sock_fd, struct packet *req)
  */
 void userLogin(int sock_fd, struct packet req)
 {
-	int ret = 0;
+	int ret = 0, snd;
 
 	ret = database.login(req, sock_fd);
-	sendPacket(sock_fd, req);
+	snd = sendPacket(sock_fd, req);
+	if (snd < 0)
+	{
+		printf("Error (sendPacket): sending response failed\n");
+		return;
+	}
 	if (ret == -2)
 	{
 		printf("Error (login): DB login error\nClosing Client Connection\n");
@@ -77,10 +82,15 @@ void userLogin(int sock_fd, struct packet req)
  */
 void listAllUsers(int sock_fd, struct packet req)
 {
-	int ret = 0;
+	int ret = 0, snd;
 
 	ret = database.listUsers(req);
-	sendPacket(sock_fd, req);
+	snd = sendPacket(sock_fd, req);
+	if (snd < 0)
+	{
+		printf("Error (sendPacket): sending response failed\n");
+		return;
+	}
 	if (ret == -2)
 	{
 		printf("Error (listUsers): DB listUsers error\nClosing Client Connection");
@@ -97,13 +107,15 @@ void listAllUsers(int sock_fd, struct packet req)
  */
 void postMessage(int sock_fd, struct packet req)
 {
-	int ret = 0;
+	int ret = 0, snd;
 
 	ret = database.postOnWall(req);
 	if (ret < 0)
 	{
 		printf("Error (postOnWall): post to database wall failed\n");
-		sendPacket(sock_fd, req);
+		snd = sendPacket(sock_fd, req);
+		if (snd < 0)
+			printf("Error (sendPacket): sending response failed\n");
 		return;
 	}
 	/*
@@ -121,11 +133,16 @@ void postMessage(int sock_fd, struct packet req)
  */
 void showWallMessage(int sock_fd, struct packet req)
 {
-	int ret;
+	int ret, snd;
 
 	DEBUG("show %s's wall\n", req.contents.wallOwner.c_str());
 	ret = database.showWall(req);
-	sendPacket(sock_fd, req);
+	snd = sendPacket(sock_fd, req);
+	if (snd < 0)
+	{
+		printf("Error (sendPacket): sending response failed\n");
+		return;
+	}
 	if (ret == -2)
 	{
 		printf("Error (showWall): DB show Wall error\nClosing Client Connection\n");

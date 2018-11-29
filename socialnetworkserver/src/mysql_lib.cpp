@@ -371,11 +371,32 @@ int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
 		}
 
 		delete pstmt;
-		//post successful
+		//post made successfully
+
 		//insert post and users into notifications table
+		//get newly created post_id
+		stmt = con->createStatement();
+		res = stmt->executeQuery("select last_insert_id() as post_id");
+
+		if (res->rowsCount() != 1) {
+			delete stmt;
+			delete res;
+
+			pkt.contents.rcvd_cnts = "Server Error";
+			return -2;
+		}
+
+		res->first();
+		post_id = res->getUInt("post_id");
+
+		delete stmt;
+		delete res;
+
 		pstmt =
 				con->prepareStatement(
-						"insert into Notifications (postID, userID) select last_insert_id(), userID from Users");
+						"insert into Notifications (postID, userID) select ?, userID from Users");
+		pstmt->setUInt(1, post_id);
+
 		if (pstmt->executeUpdate() < 1) {
 			pkt.contents.rcvd_cnts = "Server Error";
 			return -2;
@@ -383,9 +404,9 @@ int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
 
 		delete pstmt;
 
-		// command: POST alex 6 - get post_ID for the interaction log
 		insertInteractionLog(pkt.sessionId, false,
-				"POST " + pkt.contents.postee);
+				"POST " + pkt.contents.postee + " "
+						+ std::to_string(post_id));
 
 		return 0;
 
@@ -407,7 +428,52 @@ int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
 
 int MySQLDatabaseInterface::logout(struct packet& pkt) {
 
-	return 0;
+	unsigned int user_id;
+	std::string user_name;
+	try {
+		if (hasValidSession(pkt, &user_id) != 0) {
+
+			pkt.contents.rcvd_cnts = "Server Error";
+			return -2;
+		}
+
+		pstmt = con->prepareStatement(
+				"select userName from Users where userID = ?");
+		pstmt->setUInt(1, user_id);
+		res = pstmt->executeQuery();
+
+		if (res->rowsCount() != 1) {
+			delete pstmt;
+			delete res;
+
+			pkt.contents.rcvd_cnts = "Server Error";
+			return -2;
+		}
+
+		res->first();
+		user_name = res->getString("userName");
+
+		delete pstmt;
+		delete res;
+
+		insertInteractionLog(pkt.sessionId, true, "LOGOUT " + user_name);
+
+		return 0;
+
+	} catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+
+		pkt.contents.rcvd_cnts = "Server Error";
+		return -2;
+	}
+
+	pkt.contents.rcvd_cnts = "Server Error";
+	return -2;
 }
 
 void MySQLDatabaseInterface::printResults() {
