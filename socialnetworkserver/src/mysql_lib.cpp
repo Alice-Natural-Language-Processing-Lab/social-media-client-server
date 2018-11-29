@@ -425,9 +425,30 @@ int MySQLDatabaseInterface::insertInteractionLog(unsigned int session_id,
 }
 
 Notifications::Notifications(MySQLDatabaseInterface* dbInterface) {
+
 	databaseInterface = dbInterface;
 }
 
 Notifications::~Notifications() {
 
+}
+
+int Notifications::getNotifications(void) {
+
+	return 0;
+}
+
+bool Notifications::next(void) {
+
+	return 0;
+}
+
+int Notifications::sendNotification(struct packet& pkt) {
+
+	return 0;
+}
+
+int Notifications::markRead(void) {
+
+	return 0;
 }
