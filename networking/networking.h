@@ -18,7 +18,7 @@
 #include <unistd.h>
 #include "structures.h"
 
-#define TIMEOUT_SEC 5
+#define TIMEOUT_SEC 3
 #define LISTEN_QUEUE_LENGTH 15
 #define MAX_PACKET_LEN 4096
 #define ERR_LEN 256
@@ -74,6 +74,7 @@ return -1 if recieved packet format is wrong
 return -2 if error happened in the read() funciton
 return -3 if failed to send ACK packet
 return -4 if recieved a ACK packet
+return -5 if recieved packet length is incorrect
 return positive number if success, return is the total bytes of the message
 */
 int read_socket(int socketfd, struct packet &pkt);
