@@ -8,6 +8,8 @@
 
 unsigned int packetSeqNum = 0;
 bool isServer = false;
+struct packet bufferPkt;
+bool bufferOccupied = false;
 
 int create_server_socket(int portNum) {
 	isServer = true;
@@ -355,6 +357,19 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	return totalRead;
 }
 
+void deepCopyPkt(struct packet &destination, struct packet source) {
+	destination.content_len = source.content_len;
+	destination.cmd_code = source.content_len;
+	destination.req_num = source.req_num;
+    destination.sessionId = source.sessionId;
+    destination.contents.username = source.contents.username;
+	destination.contents.password = source.contents.password;
+	destination.contents.postee = source.contents.postee;
+	destination.contents.post = source.contents.post;
+	destination.contents.wallOwner = source.contents.wallOwner;
+	destination.contents.rcvd_cnts = source.contents.rcvd_cnts;
+}
+
 int write_socket(int socketfd, struct packet &pkt) {
 	if((isServer && pkt.cmd_code == NOTIFY) || (!isServer && pkt.cmd_code != ACK && pkt.cmd_code != NOTIFY)) {	//if the packet is a new request, assign a req-num to it
 		pkt.req_num = packetSeqNum;
@@ -367,24 +382,27 @@ int write_socket(int socketfd, struct packet &pkt) {
 	int writeError = write_socket_helper(socketfd, pkt);
 	if(writeError < 0)
 		return writeError;
-
-	if(pkt.cmd_code == ACK)
-		return 0;
 	
-	struct timeval tv;
-	tv.tv_sec = TIMEOUT_SEC;
-	tv.tv_usec = 0;
-	if(setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
-		char errorMessage[ERR_LEN];
-		fprintf(stderr, "setsockopt(TIMEOUT) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
-		return -5;
-	}
-
 	struct packet ackPkt;
-	int readError = read_socket_helper(socketfd, ackPkt);
-	if(readError <= 0) {
-		fprintf(stderr, "Failed to Read ACK Packet\n");
-		return -2;
+	if(bufferOccupied) {
+		deepCopyPkt(acktPkt, bufferPkt);
+		bufferOccupied = false;
+	} else {
+		struct timeval tv;
+		tv.tv_sec = TIMEOUT_SEC;
+		tv.tv_usec = 0;
+		if(setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
+			char errorMessage[ERR_LEN];
+			fprintf(stderr, "setsockopt(TIMEOUT) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
+			return -5;
+		}
+
+		struct packet ackPkt;
+		int readError = read_socket_helper(socketfd, ackPkt);
+		if(readError <= 0) {
+			fprintf(stderr, "Failed to Read ACK Packet\n");
+			return -2;
+		}
 	}
 	if(ackPkt.content_len != pkt.content_len || ackPkt.cmd_code != ACK || ackPkt.req_num != pkt.req_num || ackPkt.sessionId != pkt.sessionId) {
 		fprintf(stderr, "ACK Packet does not match\n");
@@ -411,7 +429,12 @@ int read_socket(int socketfd, struct packet &pkt) {
 		return readError;
 
 	if(pkt.cmd_code == ACK) {
-		fprintf(stderr, "Recieved a ACK Packet, this should not be happening\n");
+		if(!bufferOccupied) {
+				deepCopyPkt(bufferPkt, pkt);
+				bufferOccupied = true;
+		} else {
+			fprintf(stderr, "Recieved a ACK Packet, buffer Packet Queue Full\n");
+		}
 		return -4;
 	}
 
