@@ -19,14 +19,9 @@
 #include "networking.h"
 
 using namespace std;
-#define DEBUG
-#define ERR_LEN	256
 
 string username;
 unsigned int sessionID;
-time_t now;
-char *error = (char *)malloc(sizeof(char) * ERR_LEN);
-
 const char * getCommand(int enumVal)
 {
   return commandList[enumVal];
@@ -61,7 +56,6 @@ int main(int argc, char *argv[])
 	if (ret < 0)
 	{
 		printf("Error (processClient): Client processing failed\n");
-		now = time(NULL);
 		return -1;
 	}
 	return 0;
@@ -118,7 +112,6 @@ int enterWebBrowserMode(string servername, int serverport)
     	printf("Error (create_client_socket): Client Socket creation failed\n");
     	return -1;
     }
-    DEBUG("Socket connected \n");
 
     /*Getting username and password from stdin*/
     getLoginInfo(pw);
@@ -137,15 +130,15 @@ int enterWebBrowserMode(string servername, int serverport)
         perror("\nRead Thread create error");
         return -1;
     }
-    DEBUG("Read thread created ret = %d\n", ret);
     ret = pthread_create(&th2, &ta, (void * (*) (void *)) writeThread, (void *)((long) sock_fd));
     if (ret < 0)
     {
         perror("\nWrite Thread create error");
         return -1;
     }
-    DEBUG("Write thread created ret = %d\n", ret);
     while (1) {}
+    free(resp);
+    free(buffer);
     return 0;
 }
 
@@ -159,7 +152,6 @@ void getLoginInfo(string &pw)
     password = getpass("\nEnter Password:");
     cout<<endl;
     pw = to_string(hashfun(password));
-    DEBUG("Hashed pw is %s\n", pw.c_str());
     return;
 }
 
