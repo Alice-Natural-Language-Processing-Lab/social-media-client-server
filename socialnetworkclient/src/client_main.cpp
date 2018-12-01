@@ -18,7 +18,7 @@
 #include "networking.h"
 
 using namespace std;
-#define DEBUG	printf
+#define DEBUG
 #define ERR_LEN			256
 
 string username;

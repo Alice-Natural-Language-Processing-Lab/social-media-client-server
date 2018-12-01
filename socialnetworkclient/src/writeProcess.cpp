@@ -30,7 +30,7 @@ extern unsigned int sessionID;
 
 using namespace std;
 
-#define DEBUG	printf
+#define DEBUG
 #define ERR_LEN 256
 
 void writeThread(int sock_fd);
@@ -77,6 +77,9 @@ void writeThread(int sock_fd)
 			return;
 		}
 	}
+	printf("Connection closed\nExiting Application\n");
+	destroy_socket(sock_fd);
+	exit(0);
 }
 
 /*
@@ -153,7 +156,17 @@ int processResponse(int sock_fd, struct packet *resp)
 	if(resp->cmd_code == LIST || resp->cmd_code == SHOW || resp->cmd_code == NOTIFY)
 		displayContents(resp);
 	else if (resp->cmd_code == LOGIN)
-    	sessionID = resp->sessionId;
+		if (!resp->contents.rcvd_cnts.length())
+		{
+			sessionID = resp->sessionId;
+		}
+		else
+		{
+			displayContents(resp);
+			destroy_socket(sock_fd);
+			printf("Closing Connection\n");
+			exit(0);
+		}
 	else
 	{
 		printf("Error (processResponse):Invalid Option\n");
