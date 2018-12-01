@@ -10,18 +10,23 @@
 
 extern pthread_cond_t notify_cond;
 extern pthread_mutex_t notify_mutex;
-extern MySQLDatabaseInterface database;
+extern MySQLDatabaseDriver databaseDriver;
 
-#define DEBUG	printf
+#define SERVER_URL "tcp://127.0.0.1:3306"
+#define SERVER_USERNAME "root"
+#define SERVER_PASSWORD "asdfgh"
+#define SERVER_DATABASE "SocialNetwork"
+#define DEBUG printf
 int notify_variable;
 
 void processNotification()
 {
 	DEBUG("Notification Thread created\n");
-	/*
 	int sock_fd, read, sock_write;
-	Notifications notificiation(&database);
-	struct packet notify;
+	int ret = 0;
+	DatabaseNotificationInterface notify(databaseDriver, SERVER_URL, SERVER_USERNAME,
+			SERVER_PASSWORD, SERVER_DATABASE);
+	struct packet notifyPkt;
 	pthread_mutex_lock(&notify_mutex);
 
 	while (1)
@@ -31,23 +36,29 @@ void processNotification()
 			pthread_cond_wait(&notify_cond, &notify_mutex);
 		}
 		notify_variable = 0;
-		notification = getNotifications();
-		while (notification.next())
+		ret = notify.getNotifications();
+		if (ret < 0)
+		{
+			printf("Error (getNotifications): get Notification failed\n");
+			break;
+		}
+		while ((ret > 0) && (notify.next() > 0))
 		{
 			memset(&notify, 0, sizeof(notify));
-			sock_fd = notification.sendNotification(notify);
+			sock_fd = notify.sendNotification(notifyPkt);
+			DEBUG("Sock fd = %d\n", sock_fd);
 			if (sock_fd < 0)
 			{
 				printf("Error (sendNotification): Notification sending failed\n");
 				break;
 			}
-			sock_write = write_socket(sock_fd, notify);
+			sock_write = write_socket(sock_fd, notifyPkt);
 			if (sock_write < 0)
 			{
 				printf("Error (write_socket): Notification sending failed (skipping to next notification)\n");
 				continue;
 			}
-			read = notification.markRead();
+			read = notify.markRead();
 			if (read < 0)
 			{
 				printf("Error (markRead): Notification sending failed\n");
@@ -56,6 +67,5 @@ void processNotification()
 		}
 	}
 	pthread_mutex_unlock(&notify_mutex);
-	*/
 	return;
 }

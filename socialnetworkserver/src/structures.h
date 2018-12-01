@@ -10,13 +10,6 @@
 
 #include <string>
 
-#define USR_NAME_LEN	25
-#define PW_LEN	20
-#define POSTEE_LEN 20
-#define OWNER_LEN	20
-#define POST_LEN 100
-#define MAX_CONT_LEN 100
-
 enum commands {
 	LOGIN,
 	LOGOUT,
@@ -28,15 +21,14 @@ enum commands {
 };
 
 /*
-struct content {
-	char username[USR_NAME_LEN];
-	char password[PW_LEN];
-	char postee[POSTEE_LEN];
-	char post[POST_LEN];
-	char wallOwner[OWNER_LEN];
-	char rvcd_cnts[MAX_CONT_LEN];
-};*/
-
+ * content - structure to store the packet contents
+ * username: to store username
+ * password: to store password
+ * postee: username of postee
+ * post: post contents
+ * wallOwner: username of wall owner
+ * rcvd_cnts: contents sent by server
+ */
 struct content {
 	std::string username;
 	std::string password;
@@ -47,10 +39,13 @@ struct content {
 };
 
 /**
- * request - structure to store the request message
+ * packet - structure to store the request & response messages
+ * content_len: total packet length
  * command: to store the command portion of the request
+ * req_num: request number
+ * sessionId: session ID of the client
+ * contents: contents of the packet
  */
-
 struct packet {
     unsigned int content_len;
     enum commands cmd_code;
@@ -58,7 +53,5 @@ struct packet {
     unsigned int sessionId;
     struct content contents;
 };
-
-
 
 #endif /* STRUCTURES_H_ */

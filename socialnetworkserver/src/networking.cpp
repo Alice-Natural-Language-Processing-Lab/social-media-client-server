@@ -15,11 +15,22 @@ int create_server_socket(int portNum) {
 
 	if(socketfd < 0) {
 		char errorMessage[ERR_LEN];
-		strerror_r(errno, errorMessage, ERR_LEN);
-		fprintf(stderr, "Failed to create Listening Socket; Error Message: %s\n", errorMessage);
+		fprintf(stderr, "Failed to create Listening Socket; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
 		return -1;
 	}
 
+	//set reuse addr and port
+	int enable = 1;
+	if(setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+		char errorMessage[ERR_LEN];
+		fprintf(stderr, "setsockopt(SO_REUSEADDR) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
+		return -4;
+	}
+	if(setsockopt(socketfd, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(int)) < 0) {
+		char errorMessage[ERR_LEN];
+		fprintf(stderr, "setsockopt(SO_REUSEPORT) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
+		return -4;
+	}
 	struct sockaddr_in serverAddr;
 	memset(&serverAddr, 0, sizeof(serverAddr)); //Clear structure
 	serverAddr.sin_family = AF_INET;
@@ -28,33 +39,27 @@ int create_server_socket(int portNum) {
 
 	if(bind(socketfd,(struct sockaddr *)&serverAddr , sizeof(serverAddr)) < 0) {
 		char errorMessage[ERR_LEN];
-		strerror_r(errno, errorMessage, ERR_LEN);
-		fprintf(stderr, "Failed to Bind; Error Message: %s\n", errorMessage);
+		fprintf(stderr, "Failed to Bind; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
 		return -2;
 	}
 
 	/* Listen on the socket */
 	if(listen(socketfd, LISTEN_QUEUE_LENGTH) < 0) {
 		char errorMessage[ERR_LEN];
-		strerror_r(errno, errorMessage, ERR_LEN);
-		fprintf(stderr, "Failed to Listen; Error Message: %s\n", errorMessage);
+		fprintf(stderr, "Failed to Listen; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
 		return -3;
 	}
 
-	//set reuse addr and port
-	int enable = 1;
-	if (setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+/*
+	struct timeval tv;
+	tv.tv_sec = TIMEOUT_SEC;
+	tv.tv_usec = 0;
+	if(setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
 		char errorMessage[ERR_LEN];
-		strerror_r(errno, errorMessage, ERR_LEN);
-		fprintf(stderr, "setsockopt(SO_REUSEADDR) failed; Error Message: %s\n", errorMessage);
+		fprintf(stderr, "setsockopt(TIMEOUT) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
 		return errno;
 	}
-	if (setsockopt(socketfd, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(int)) < 0) {
-		char errorMessage[ERR_LEN];
-		strerror_r(errno, errorMessage, ERR_LEN);
-		fprintf(stderr, "setsockopt(SO_REUSEPORT) failed; Error Message: %s\n", errorMessage);
-		return errno;
-	}
+*/
 
 	return socketfd;
 }
@@ -84,15 +89,15 @@ int create_client_socket(string serverName, int portNum) {
 		socketfd = socket(currentInfo->ai_family, currentInfo->ai_socktype, currentInfo->ai_protocol);
 		if(socketfd < 0) {
 			char errorMessage[ERR_LEN];
-			strerror_r(errno, errorMessage, ERR_LEN);
-			fprintf(stderr, "Failed to Create Socket; Error Message: %s\n", errorMessage);
-			return errno;
+			fprintf(stderr, "Failed to Create Socket; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
+			return -2;
 		}
 		//connect socket
 		if(connect(socketfd, currentInfo->ai_addr, currentInfo->ai_addrlen) > -1) {
 			break; //success
 		}
-		close(socketfd);	//none success
+		close(socketfd);
+		socketfd = -4;		//none success
 	}
 
 	//set reuse addr and port
@@ -100,14 +105,14 @@ int create_client_socket(string serverName, int portNum) {
 	if (setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
 		char errorMessage[ERR_LEN];
 		strerror_r(errno, errorMessage, ERR_LEN);
-		fprintf(stderr, "setsockopt(SO_REUSEADDR) failed; Error Message: %s\n", errorMessage);
-		return errno;
+		fprintf(stderr, "setsockopt(SO_REUSEADDR) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
+		return -3;
 	}
 	if (setsockopt(socketfd, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(int)) < 0) {
 		char errorMessage[ERR_LEN];
 		strerror_r(errno, errorMessage, ERR_LEN);
-		fprintf(stderr, "setsockopt(SO_REUSEPORT) failed; Error Message: %s\n", errorMessage);
-		return errno;
+		fprintf(stderr, "setsockopt(SO_REUSEPORT) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
+		return -3;
 	}
 
 	return socketfd;
@@ -119,9 +124,8 @@ int accept_socket(int socketfd) {
 	int slaveSocket = accept(socketfd, (struct sockaddr *)&clientAddr, &clientSize);
 	if(slaveSocket < 0) {
 		char errorMessage[ERR_LEN];
-		strerror_r(errno, errorMessage, ERR_LEN);
-		fprintf(stderr, "Failed to Accept Socket; Error Message: %s\n", errorMessage);
-		return errno;
+		fprintf(stderr, "Failed to Accept Socket; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
+		return -1;
 	}
 	return slaveSocket;
 }
@@ -129,15 +133,14 @@ int accept_socket(int socketfd) {
 int destroy_socket(int socketfd) {
 	if(close(socketfd) < 0) {
 		char errorMessage[ERR_LEN];
-		strerror_r(errno, errorMessage, ERR_LEN);
-		fprintf(stderr, "Failed to Close Socket; Error Message: %s\n", errorMessage);
-		return errno;
+		fprintf(stderr, "Failed to Close Socket; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
+		return -1;
 	}
 	return 0;
 }
 
 int write_socket(int socketfd, struct packet &pkt) {
-	if((isServer && pkt.cmd_code == NOTIFY) || (!isServer && pkt.cmd_code != ACK && pkt.cmd_code != NOTIFY)) {
+	if((isServer && pkt.cmd_code == NOTIFY) || (!isServer && pkt.cmd_code != ACK && pkt.cmd_code != NOTIFY)) {	//if the packet is a new request, assign a req-num to it
 		pkt.req_num = packetSeqNum;
 		packetSeqNum++;
 	}
@@ -170,13 +173,12 @@ int write_socket(int socketfd, struct packet &pkt) {
 	//total is 12+10+9+11+10+10+8+6+11+11 = 98
 
 	//For Debug Purpose
-	printf("stirng: %s\nstringLength: %d\n", pktString, (int)strlen(pktString));
+	//printf("stirng: %s\nstringLength: %d\n", pktString, (int)strlen(pktString));
 
 	if(write(socketfd, pktString, strlen(pktString)) < 0) {
-		char *error = (char *)malloc(sizeof(char) * ERR_LEN);
-		strerror_r(errno, error, ERR_LEN);
-		fprintf(stderr, "Error (read): %s\n", error);
-		return errno;
+		char errorMessage[ERR_LEN];
+		fprintf(stderr, "Error (read): %s\n", strerror_r(errno, errorMessage, ERR_LEN));
+		return -1;
 	}
 	return 0;
 }
@@ -186,7 +188,7 @@ int read_socket(int socketfd, struct packet &pkt) {
 	int totalRead = 0;
 	int startIndex = -1;
 	int endIndex = -1;
-	char *error = (char *)malloc(sizeof(char) * ERR_LEN);
+	char errorMessage[ERR_LEN];
 	char *buffer = (char *)malloc(sizeof(char) * MAX_PACKET_LEN);
 	char *bufferHead = buffer;
 	int packetLength = MAX_PACKET_LEN;
@@ -197,9 +199,9 @@ int read_socket(int socketfd, struct packet &pkt) {
 		byteRead = read(socketfd, buffer, packetLength);
 		if (byteRead < 0)
 		{
-			strerror_r(errno, error, ERR_LEN);
-			fprintf(stderr, "Error (read): %s\n", error);
-			return errno;
+			fprintf(stderr, "Error (read): %s\n", strerror_r(errno, errorMessage, ERR_LEN));
+			free(bufferHead);
+			return -2;
 		}
 		buffer += byteRead;
 		totalRead += byteRead;
@@ -216,11 +218,12 @@ int read_socket(int socketfd, struct packet &pkt) {
 			break;
 	}
 	if(bufferHead == NULL || totalRead == 0) {
-		//fprintf(stderr, "Packet Read is NULL\n");
+		free(bufferHead);
 		return 0;
 	}
 
 	string pktString(bufferHead);
+	free(bufferHead);
 
 	startIndex = pktString.find("content_len:");	//first ':'
 	endIndex = pktString.find(",cmd_code:");		//first ','
@@ -230,8 +233,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	}
 	string component = pktString.substr(startIndex + 12, endIndex - startIndex - 12);
 	pkt.content_len = (unsigned int) stoi(component);
-	//prints are for debug purposes
-	//printf("content_len:%u\n", pkt.content_len);
 
 	startIndex = pktString.find(",cmd_code:", endIndex);	//next component start
 	endIndex = pktString.find(",req_num:", startIndex);	//next component end
@@ -241,7 +242,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	}
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
 	pkt.cmd_code = static_cast<commands>(stoi(component));
-	//printf("cmd_code:%d\n", pkt.cmd_code);
 
 	startIndex = pktString.find(",req_num:", endIndex);
 	endIndex = pktString.find(",sessionId:", startIndex);
@@ -251,7 +251,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	}
 	component = pktString.substr(startIndex + 9, endIndex - startIndex - 9);
 	pkt.req_num = (unsigned int) stoul(component);
-	//printf("req_num:%u\n", pkt.req_num);
 
 	startIndex = pktString.find(",sessionId:", endIndex);
 	endIndex = pktString.find(",username:", startIndex);
@@ -261,7 +260,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	}
 	component = pktString.substr(startIndex + 11, endIndex - startIndex - 11);
 	pkt.sessionId = (unsigned int) stoul(component);
-	//printf("sessionId:%u\n", pkt.sessionId);
 
 	startIndex = pktString.find(",username:", endIndex);
 	endIndex = pktString.find(",password:", startIndex);
@@ -272,7 +270,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
 	if (component.length() > 0)
 		pkt.contents.username = component;
-	//printf("username:%s\n", pkt.contents.username.c_str());
 
 	startIndex = pktString.find(",password:", endIndex);
 	endIndex = pktString.find(",postee:", startIndex);
@@ -283,7 +280,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
 	if (component.length() > 0)
 		pkt.contents.password = component;
-	//printf("password:%s\n", pkt.contents.password.c_str());
 
 	startIndex = pktString.find(",postee:", endIndex);
 	endIndex = pktString.find(",post:", startIndex);
@@ -294,7 +290,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 8, endIndex - startIndex - 8);
 	if (component.length() > 0)
 		pkt.contents.postee = component;
-	//printf("postee:%s\n", pkt.contents.postee.c_str());
 
 	startIndex = pktString.find(",post:", endIndex);
 	endIndex = pktString.find(",wallOwner:", startIndex);
@@ -305,7 +300,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 6, endIndex - startIndex - 6);
 	if (component.length() > 0)
 		pkt.contents.post = component;
-	//printf("post:%s\n", pkt.contents.post.c_str());
 
 	startIndex = pktString.find(",wallOwner:", endIndex);
 	endIndex = pktString.find(",rcvd_cnts:", startIndex);
@@ -316,7 +310,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 11, endIndex - startIndex - 11);
 	if (component.length() > 0)
 		pkt.contents.wallOwner = component;
-	//printf("wallOwner:%s\n", pkt.contents.wallOwner.c_str());
 
 	startIndex = pktString.find(",rcvd_cnts:", endIndex);
 	if(startIndex == -1) {
@@ -326,7 +319,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 11, packetLength - startIndex - 11);
 	if (component.length() > 0)
 		pkt.contents.rcvd_cnts = component;
-	//printf("rcvd_cnts:%s\n", pkt.contents.rcvd_cnts.c_str());
 
 	return totalRead;
 }
