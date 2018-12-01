@@ -44,7 +44,7 @@ public:
 	int session_timeout = 15; // in minutes between 0 and 59
 	unsigned int session_id_max = UINT_MAX;
 
-	MySQLDatabaseInterface(MySQLDatabaseDriver* databaseDriver,
+	MySQLDatabaseInterface(MySQLDatabaseDriver databaseDriver,
 			std::string server_url, std::string server_username,
 			std::string server_password, std::string server_database);
 	~MySQLDatabaseInterface();

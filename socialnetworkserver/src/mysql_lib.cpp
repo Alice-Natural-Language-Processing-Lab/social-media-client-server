@@ -25,11 +25,11 @@ MySQLDatabaseDriver::~MySQLDatabaseDriver() {
 }
 
 MySQLDatabaseInterface::MySQLDatabaseInterface(
-		MySQLDatabaseDriver* databaseDriver, std::string server_url,
+		MySQLDatabaseDriver databaseDriver, std::string server_url,
 		std::string server_username, std::string server_password,
 		std::string server_database) {
 
-	driver = databaseDriver->driver;
+	driver = databaseDriver.driver;
 	try {
 		con = driver->connect(server_url, server_username, server_password);
 		con->setSchema(server_database);
@@ -80,9 +80,12 @@ int MySQLDatabaseInterface::hasValidSession(struct packet& pkt,
 	 */
 
 	try {
+		//This query only looks at sessions. This allows a single user to be logged into multiple sessions.
 		pstmt =
 				con->prepareStatement(
-						"SELECT * FROM (SELECT * FROM SocialNetwork.InteractionLog WHERE sessionID = ? ORDER BY TIMESTAMP DESC LIMIT 1) TEMP WHERE ADDTIME(TIMESTAMP, CONCAT('00:', ? ,':00')) > NOW() AND logout <> 1");
+						"SELECT * FROM (SELECT * FROM SocialNetwork.InteractionLog WHERE "
+								"sessionID = ? ORDER BY TIMESTAMP DESC LIMIT 1) TEMP WHERE "
+								"ADDTIME(TIMESTAMP, CONCAT('00:', ? ,':00')) > NOW() AND logout <> 1");
 		pstmt->setUInt(1, pkt.sessionId);
 		pstmt->setInt(2, session_timeout);
 		res = pstmt->executeQuery();
@@ -292,7 +295,10 @@ int MySQLDatabaseInterface::showWall(struct packet &pkt) {
 		//get requested user's wall
 		pstmt =
 				con->prepareStatement(
-						"select timestamp, content, userPostee.userName postee, userPoster.userName poster from Posts join Users userPostee on userPostee.userID = Posts.posteeUserID join Users userPoster on userPoster.userID = Posts.posterUserID where userPostee.userName = ? order by timestamp asc");
+						"select timestamp, content, userPostee.userName postee, userPoster.userName "
+								"poster from Posts join Users userPostee on userPostee.userID = Posts.posteeUserID "
+								"join Users userPoster on userPoster.userID = Posts.posterUserID "
+								"where userPostee.userName = ? order by timestamp asc");
 		pstmt->setString(1, pkt.contents.wallOwner);
 		res = pstmt->executeQuery();
 
@@ -358,7 +364,8 @@ int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
 
 		pstmt =
 				con->prepareStatement(
-						"insert into Posts (posterUserID, posteeUserID, content) select ?, postee.userID, ? from Users postee where postee.userName = ?");
+						"insert into Posts (posterUserID, posteeUserID, content) "
+						"select ?, postee.userID, ? from Users postee where postee.userName = ?");
 		pstmt->setUInt(1, poster_id);
 		pstmt->setString(2, pkt.contents.post);
 		pstmt->setString(3, pkt.contents.postee);
@@ -525,7 +532,8 @@ int MySQLDatabaseInterface::insertInteractionLog(unsigned int session_id,
 
 		pstmt =
 				con->prepareStatement(
-						"insert into InteractionLog (userID, sessionID, logout, socketDescriptor, command) values (?, ?, ?, ?, ?)");
+						"insert into InteractionLog (userID, sessionID, logout, socketDescriptor, command) "
+						"values (?, ?, ?, ?, ?)");
 		pstmt->setUInt(1, user_id);
 		pstmt->setUInt(2, session_id);
 		pstmt->setBoolean(3, logout);
@@ -608,18 +616,26 @@ Notifications::~Notifications() {
 }
 
 int Notifications::getNotifications(void) {
-/*
- *This query should give me users that are eligible for notifications
- *
- * select distinct userID from (
-select IntLog2.*, IntLog1.userID, IntLog1.timestamp, IntLog1.logout from
-(select sessionID, max(timestamp) maxTimestamp from InteractionLog group by sessionID) IntLog2 join
-(select userID, sessionID, timestamp, logout from InteractionLog) IntLog1
-on IntLog1.sessionID = IntLog2.sessionID
+	/*
+	 *This query should give me users that are eligible for notifications
+	 *
+	 select OnlineUsers.socketDescriptor, Notifications.notificationID,
+Posts.content, Poster.userName poster, Postee.userName postee
+from (select IntLog2.userID, IntLog1.socketDescriptor from
+(select userID, max(timestamp) maxTimestamp from InteractionLog group by userID) IntLog2 join
+(select userID, timestamp, logout, socketDescriptor from InteractionLog) IntLog1
+on IntLog1.userID = IntLog2.userID
 and IntLog1.timestamp = IntLog2.maxTimestamp
 where logout <>1
-and ADDTIME(TIMESTAMP, CONCAT('00:', 20 ,':00')) > NOW()) ActiveSessions
- */
+and ADDTIME(TIMESTAMP, CONCAT('00:', 50 ,':00')) > NOW()) OnlineUsers
+join Notifications on OnlineUsers.userID = Notifications.userID
+join Posts on Posts.postID = Notifications.postID
+join Users Poster on Poster.userID = Posts.posterUserID
+join Users Postee on Postee.userID = Posts.posteeUserID
+where Notifications.readFlag = 0
+	 */
+
+
 	return 0;
 }
 
