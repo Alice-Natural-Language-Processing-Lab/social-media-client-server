@@ -1,3 +1,4 @@
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -18,30 +19,20 @@
 #include "networking.h"
 
 using namespace std;
-#define DEBUG
-#define ERR_LEN			256
 
 string username;
 unsigned int sessionID;
-time_t now;
-char *error = (char *)malloc(sizeof(char) * ERR_LEN);
-
-const char * getCommand(int enumVal)
-{
-  return commandList[enumVal];
-}
 
 void getLoginInfo(string &pw);
 int enterLoginMode(string servername, int serverport);
 int enterWebBrowserMode(string servername, int serverport);
-int getAddrInfo(string host, string port, struct addrinfo **serv_info);
+
 
 int main(int argc, char *argv[])
 {
 	string servername = "localhost";
 	int serverport = 5354;
 	int ret = 0;
-
 	switch (argc)
 	{
 	case 1:
@@ -61,7 +52,6 @@ int main(int argc, char *argv[])
 	if (ret < 0)
 	{
 		printf("Error (processClient): Client processing failed\n");
-		now = time(NULL);
 		return -1;
 	}
 	return 0;
@@ -83,7 +73,7 @@ int enterLoginMode(string servername, int serverport)
         cout<<"1. Login\n2. Exit"<<endl;
         getline(std::cin, input);
         if (!input.length())
-        	break;
+        	continue;
         option = atoi(input.c_str());
         if (option == 1)
         {
@@ -98,7 +88,7 @@ int enterLoginMode(string servername, int serverport)
         else
         {
             cout<<"Invalid option. Try again!!"<<endl;
-        } 
+        }
     }
     return 0;
 }
@@ -107,52 +97,21 @@ int enterLoginMode(string servername, int serverport)
 int enterWebBrowserMode(string servername, int serverport)
 {
     int  sock_fd;
-    //struct addrinfo *serv_info, *rp;
-    //int sock_conn, addr_info;
     struct packet *resp = (struct packet *)malloc(sizeof(struct packet));
     char *buffer = (char *)resp;
     int resp_len;
     string pw;
     int ret;
-
-    //string port = to_string(serverport);
     sock_fd = create_client_socket(servername, serverport);
     if (sock_fd < 0)
     {
     	printf("Error (create_client_socket): Client Socket creation failed\n");
     	return -1;
     }
-    /*
-    addr_info = getAddrInfo(servername, port.c_str(), &serv_info);
-    if (addr_info != 0)
-    {
-        printf("Error (getaddrinfo): %s\n", gai_strerror(addr_info));
-        return -1;
-    }
-    
-    for (rp = serv_info; rp != NULL; rp = rp->ai_next)
-    {
-        sock_fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-        if (sock_fd < 0)
-            continue;
-        DEBUG("Socket created\n");
-        sock_conn = connect(sock_fd, rp->ai_addr, rp->ai_addrlen);
-        if (sock_conn != -1)
-            break;
-        close(sock_fd);
-    }
-    if (rp == NULL)
-    {
-        printf("No address in the list was a success\n");
-        return -1;
-    }
-    freeaddrinfo(serv_info);
-	*/
 
-    DEBUG("Socket connected \n");
-    /*Getting username and password from stdin*/ 
+    /*Getting username and password from stdin*/
     getLoginInfo(pw);
-    
+
     /*Creating and sending packet*/
     sendPacket(sock_fd, LOGIN, username, pw);
 
@@ -167,18 +126,18 @@ int enterWebBrowserMode(string servername, int serverport)
         perror("\nRead Thread create error");
         return -1;
     }
-    DEBUG("Read thread created ret = %d\n", ret);
     ret = pthread_create(&th2, &ta, (void * (*) (void *)) writeThread, (void *)((long) sock_fd));
     if (ret < 0)
     {
         perror("\nWrite Thread create error");
         return -1;
     }
-    DEBUG("Write thread created ret = %d\n", ret);
     while (1) {}
+    free(resp);
+    free(buffer);
     return 0;
 }
-      
+
 void getLoginInfo(string &pw)
 {
 	std::tr1::hash<string> hashfun;
@@ -186,32 +145,9 @@ void getLoginInfo(string &pw)
 
     cout<<"Enter User Name:";
     cin>>username;
-    password = getpass("\nEnter Password:");
+    password = getpass("Enter Password:");
     cout<<endl;
     pw = to_string(hashfun(password));
-    DEBUG("Hashed pw is %s\n", pw.c_str());
     return;
 }
-      
-/**
- * getAddrInfo() - get addr info of server
- * host: server host information
- * port: server port
- * serv_info: to store server information
- * return addinfo status
- */
-int getAddrInfo(string host, string port, struct addrinfo **serv_info)
-{
-	struct addrinfo hints;
-	int addr_info;
-
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family		= AF_INET;
-	hints.ai_socktype	= SOCK_STREAM;
-	hints.ai_protocol	= 0;
-	hints.ai_flags		= 0;
-	addr_info		= getaddrinfo(host.c_str(), port.c_str(), &hints, serv_info);
-	return addr_info;
-}
-
 
