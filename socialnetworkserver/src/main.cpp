@@ -156,10 +156,11 @@ void test_logout(DatabaseCommandInterface& commandInterface) {
 
 void test_notifications(DatabaseNotificationInterface& notificationInterface) {
 
-	cout << "notification interface:\n";
-	//<< notificationInterface.getNotifications() << endl;
+	cout << "notification interface:\n"
+			<< notificationInterface.getNotifications() << endl;
 	int i = 1;
-	while (notificationInterface.next() == 0) {
-		cout << i++ << endl;
+	while (i > 0) {
+		i = notificationInterface.next();
+		cout << i << endl;
 	}
 }

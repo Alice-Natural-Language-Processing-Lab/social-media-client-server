@@ -24,6 +24,9 @@
 
 #include "structures.h"
 
+string wall_entry_format(string timestamp, string poster, string postee, string content);
+//formats wall entry consistently across classes
+
 class MySQLDatabaseDriver {
 	/*
 	 * Call this once in the global space to initialize the MySQLDriver
@@ -201,11 +204,11 @@ public:
 
 	int next(void);
 	/*
-	 * Iterates the Notification object to the next entry. Returns 0 if the entry exists.
+	 * Iterates the Notification object to the next entry. Returns the row number if the entry exists.
 	 * Starts on an empty "0th" entry so much be called once to get to the first entry.
 	 *
 	 * Returns:
-	 * 0 if entry exists
+	 * row number if entry exists
 	 * -1 if no more entries
 	 * -2 if server error
 	 */
@@ -214,6 +217,7 @@ public:
 	/*
 	 * Generates the notification packet and returns the socket descriptor to send it to.
 	 * Returns:
+	 * socket descriptor if successful
 	 * -1 if fails.
 	 * -2 if server error
 	 */

@@ -7,6 +7,13 @@
 
 #include "mysql_lib.h"
 
+string wall_entry_format(string timestamp, string poster, string postee,
+		string content) {
+
+	return timestamp + " - " + poster + " posted on " + postee + "'s wall\n"
+			+ content;
+}
+
 MySQLDatabaseDriver::MySQLDatabaseDriver() {
 
 	try {
@@ -310,10 +317,9 @@ int DatabaseCommandInterface::showWall(struct packet &pkt) {
 		} else {
 			//generate wall contents
 			while (res->next()) {
-				temp += res->getString("timestamp") + " - "
-						+ res->getString("poster") + " posted on "
-						+ res->getString("postee") + "'s wall\n"
-						+ res->getString("content");
+				temp += wall_entry_format(res->getString("timestamp"),
+						res->getString("poster"), res->getString("postee"),
+						res->getString("content"));
 				if (!res->isLast()) {
 					temp += "\n\n";
 				}
@@ -648,7 +654,7 @@ int DatabaseNotificationInterface::getNotifications(void) {
 		pstmt =
 				con->prepareStatement(
 						"select OnlineUsers.socketDescriptor, Notifications.notificationID, "
-								"Posts.content, Poster.userName poster, Postee.userName postee "
+								"Posts.content, Posts.timestamp, Poster.userName poster, Postee.userName postee "
 								"from (select IntLog2.userID, IntLog1.socketDescriptor from "
 								"(select userID, max(timestamp) maxTimestamp from InteractionLog group by userID) IntLog2 join "
 								"(select userID, timestamp, logout, socketDescriptor from InteractionLog) IntLog1 "
@@ -695,7 +701,7 @@ int DatabaseNotificationInterface::next(void) {
 			return -1;
 		} else {
 			res->next();
-			return 0;
+			return res->getRow();
 		}
 
 	} catch (sql::SQLException &e) {
@@ -718,7 +724,20 @@ int DatabaseNotificationInterface::sendNotification(struct packet& pkt) {
 		//can't run function until notifications are generated
 		return -2;
 	}
-	return 0;
+	try {
+
+	} catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+
+		return -2;
+	}
+
+	return -2;
 }
 
 int DatabaseNotificationInterface::markRead(void) {
@@ -727,5 +746,18 @@ int DatabaseNotificationInterface::markRead(void) {
 		//can't run function until notifications are generated
 		return -2;
 	}
-	return 0;
+	try {
+
+	} catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+
+		return -2;
+	}
+
+	return -2;
 }
