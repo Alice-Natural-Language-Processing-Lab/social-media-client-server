@@ -19,23 +19,23 @@
 
 using namespace std;
 
-void test_hasValidSession(MySQLDatabaseInterface& database);
-void test_getResults(MySQLDatabaseInterface& database);
-void test_login(MySQLDatabaseInterface& database);
-void test_listUsers(MySQLDatabaseInterface& database);
-void test_showWall(MySQLDatabaseInterface& database);
-void test_postOnWall(MySQLDatabaseInterface& database);
-void test_logout(MySQLDatabaseInterface& database);
+void test_hasValidSession(DatabaseCommandInterface& database);
+void test_getResults(DatabaseCommandInterface& database);
+void test_login(DatabaseCommandInterface& database);
+void test_listUsers(DatabaseCommandInterface& database);
+void test_showWall(DatabaseCommandInterface& database);
+void test_postOnWall(DatabaseCommandInterface& database);
+void test_logout(DatabaseCommandInterface& database);
 
 packet test_packet1, test_packet2, test_packet3;
 
 int main() {
 
 	MySQLDatabaseDriver databaseDriver;
-	MySQLDatabaseInterface database(&databaseDriver, SERVER_URL,
+	DatabaseCommandInterface database(databaseDriver, SERVER_URL,
 	SERVER_USERNAME,
 	SERVER_PASSWORD, SERVER_DATABASE);
-	Notifications notifications(&database);
+	DatabaseNotificationInterface notifications(&database);
 
 	while (true) {
 		//test_getResults(database);
@@ -51,7 +51,7 @@ int main() {
 	exit(0);
 }
 
-void test_hasValidSession(MySQLDatabaseInterface& database) {
+void test_hasValidSession(DatabaseCommandInterface& database) {
 
 	//string timeout;
 	//test_packet1.sessionId = 3456789012;
@@ -66,7 +66,7 @@ void test_hasValidSession(MySQLDatabaseInterface& database) {
 			<< test_packet2.contents.rcvd_cnts << endl;
 }
 
-void test_getResults(MySQLDatabaseInterface& database) {
+void test_getResults(DatabaseCommandInterface& database) {
 
 	string query;
 
@@ -74,15 +74,15 @@ void test_getResults(MySQLDatabaseInterface& database) {
 	database.getResults(query);
 }
 
-void test_login(MySQLDatabaseInterface& database) {
+void test_login(DatabaseCommandInterface& database) {
 
 	unsigned int socket_descriptor_test = 5;
 	test_packet1.contents.username = "alex";
 	test_packet1.contents.password = "17663506432727786073";
-	test_packet2.contents.username = "sam";
-	test_packet2.contents.password = "wrongpass";
-	test_packet3.contents.username = "nousername";
-	test_packet3.contents.password = "doesntmatter";
+	test_packet2.contents.username = "ben";
+	test_packet2.contents.password = "12927111708687947557";
+	test_packet3.contents.username = "cris";
+	test_packet3.contents.password = "11740314204215096121";
 
 	database.login(test_packet1, socket_descriptor_test);
 	database.login(test_packet2, socket_descriptor_test);
@@ -98,13 +98,13 @@ void test_login(MySQLDatabaseInterface& database) {
 			<< endl;
 }
 
-void test_listUsers(MySQLDatabaseInterface& database) {
+void test_listUsers(DatabaseCommandInterface& database) {
 
 	database.listUsers(test_packet1);
 	cout << "test_packet1:\n" << test_packet1.contents.rcvd_cnts << endl;
 }
 
-void test_showWall(MySQLDatabaseInterface& database) {
+void test_showWall(DatabaseCommandInterface& database) {
 
 	test_packet1.contents.wallOwner = "alex";
 
@@ -122,7 +122,7 @@ void test_showWall(MySQLDatabaseInterface& database) {
 	cout << "test_packet3:\n" << test_packet1.contents.rcvd_cnts << endl;
 }
 
-void test_postOnWall(MySQLDatabaseInterface& database) {
+void test_postOnWall(DatabaseCommandInterface& database) {
 
 	test_packet1.contents.postee = "cris";
 	test_packet1.contents.post = "Hey! Wanna eat some ice cream!";
@@ -130,14 +130,14 @@ void test_postOnWall(MySQLDatabaseInterface& database) {
 	database.postOnWall(test_packet1);
 	cout << "test_packet1:\n" << test_packet1.contents.rcvd_cnts << endl;
 
-	test_packet1.contents.postee = "sauron";
-	test_packet1.contents.post = "Hey! Wanna eat some ice cream!";
+	test_packet2.contents.postee = "ben";
+	test_packet2.contents.post = "Hey! Wanna eat some ice cream!";
 
-	database.postOnWall(test_packet1);
-	cout << "test_packet1:\n" << test_packet1.contents.rcvd_cnts << endl;
+	database.postOnWall(test_packet2);
+	cout << "test_packet1:\n" << test_packet2.contents.rcvd_cnts << endl;
 }
 
-void test_logout(MySQLDatabaseInterface& database) {
+void test_logout(DatabaseCommandInterface& database) {
 
 	database.logout(test_packet1);
 	cout << "test_packet1:\n" << test_packet1.contents.rcvd_cnts << endl;

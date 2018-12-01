@@ -24,7 +24,7 @@ MySQLDatabaseDriver::MySQLDatabaseDriver() {
 MySQLDatabaseDriver::~MySQLDatabaseDriver() {
 }
 
-MySQLDatabaseInterface::MySQLDatabaseInterface(
+DatabaseCommandInterface::DatabaseCommandInterface(
 		MySQLDatabaseDriver databaseDriver, std::string server_url,
 		std::string server_username, std::string server_password,
 		std::string server_database) {
@@ -43,12 +43,12 @@ MySQLDatabaseInterface::MySQLDatabaseInterface(
 	}
 }
 
-MySQLDatabaseInterface::~MySQLDatabaseInterface() {
+DatabaseCommandInterface::~DatabaseCommandInterface() {
 
 	delete con;
 }
 
-void MySQLDatabaseInterface::getResults(std::string query) {
+void DatabaseCommandInterface::getResults(std::string query) {
 
 	try {
 		stmt = con->createStatement();
@@ -68,7 +68,7 @@ void MySQLDatabaseInterface::getResults(std::string query) {
 	}
 }
 
-int MySQLDatabaseInterface::hasValidSession(struct packet& pkt,
+int DatabaseCommandInterface::hasValidSession(struct packet& pkt,
 		unsigned int* user_id, unsigned int* socket_descriptor) {
 
 	/*
@@ -137,7 +137,7 @@ int MySQLDatabaseInterface::hasValidSession(struct packet& pkt,
 	return -2;
 }
 
-int MySQLDatabaseInterface::login(struct packet &pkt,
+int DatabaseCommandInterface::login(struct packet &pkt,
 		unsigned int socket_descriptor) {
 
 	bool valid_session_id = false;
@@ -220,7 +220,7 @@ int MySQLDatabaseInterface::login(struct packet &pkt,
 	return -2;
 }
 
-int MySQLDatabaseInterface::listUsers(struct packet &pkt) {
+int DatabaseCommandInterface::listUsers(struct packet &pkt) {
 
 	std::string temp;
 	try {
@@ -274,7 +274,7 @@ int MySQLDatabaseInterface::listUsers(struct packet &pkt) {
 	return -2;
 }
 
-int MySQLDatabaseInterface::showWall(struct packet &pkt) {
+int DatabaseCommandInterface::showWall(struct packet &pkt) {
 
 	std::string temp;
 	try {
@@ -348,7 +348,7 @@ int MySQLDatabaseInterface::showWall(struct packet &pkt) {
 	return -2;
 }
 
-int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
+int DatabaseCommandInterface::postOnWall(struct packet &pkt) {
 
 	unsigned int poster_id, post_id;
 	try {
@@ -432,7 +432,7 @@ int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
 	return -2;
 }
 
-int MySQLDatabaseInterface::logout(struct packet& pkt) {
+int DatabaseCommandInterface::logout(struct packet& pkt) {
 
 	unsigned int user_id;
 	std::string user_name;
@@ -482,7 +482,7 @@ int MySQLDatabaseInterface::logout(struct packet& pkt) {
 	return -2;
 }
 
-void MySQLDatabaseInterface::printResults() {
+void DatabaseCommandInterface::printResults() {
 
 	int column_count, initial_row = res->getRow();
 	res->beforeFirst();
@@ -502,7 +502,7 @@ void MySQLDatabaseInterface::printResults() {
 	res->absolute(initial_row);
 }
 
-int MySQLDatabaseInterface::insertInteractionLog(unsigned int session_id,
+int DatabaseCommandInterface::insertInteractionLog(unsigned int session_id,
 		bool logout, std::string command, unsigned int user_id,
 		unsigned int socket_descriptor) {
 
@@ -563,7 +563,7 @@ int MySQLDatabaseInterface::insertInteractionLog(unsigned int session_id,
 	return -2;
 }
 
-int MySQLDatabaseInterface::getUserID(std::string user_name,
+int DatabaseCommandInterface::getUserID(std::string user_name,
 		unsigned int* user_id) {
 
 	try {
@@ -606,16 +606,16 @@ int MySQLDatabaseInterface::getUserID(std::string user_name,
 	return -2;
 }
 
-Notifications::Notifications(MySQLDatabaseInterface* dbInterface) {
+DatabaseNotificationInterface::DatabaseNotificationInterface(DatabaseCommandInterface* dbInterface) {
 
 	databaseInterface = dbInterface;
 }
 
-Notifications::~Notifications() {
+DatabaseNotificationInterface::~DatabaseNotificationInterface() {
 
 }
 
-int Notifications::getNotifications(void) {
+int DatabaseNotificationInterface::getNotifications(void) {
 	/*
 	 *This query should give me users that are eligible for notifications
 	 *
@@ -639,17 +639,17 @@ where Notifications.readFlag = 0
 	return 0;
 }
 
-int Notifications::next(void) {
+int DatabaseNotificationInterface::next(void) {
 
 	return 0;
 }
 
-int Notifications::sendNotification(struct packet& pkt) {
+int DatabaseNotificationInterface::sendNotification(struct packet& pkt) {
 
 	return 0;
 }
 
-int Notifications::markRead(void) {
+int DatabaseNotificationInterface::markRead(void) {
 
 	return 0;
 }

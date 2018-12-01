@@ -35,7 +35,7 @@ public:
 	~MySQLDatabaseDriver();
 };
 
-class MySQLDatabaseInterface {
+class DatabaseCommandInterface {
 	/*
 	 * Call this in each client handler thread that needs to connect to the database.
 	 * It handles database connections only within a thread.
@@ -44,10 +44,10 @@ public:
 	int session_timeout = 15; // in minutes between 0 and 59
 	unsigned int session_id_max = UINT_MAX;
 
-	MySQLDatabaseInterface(MySQLDatabaseDriver databaseDriver,
+	DatabaseCommandInterface(MySQLDatabaseDriver databaseDriver,
 			std::string server_url, std::string server_username,
 			std::string server_password, std::string server_database);
-	~MySQLDatabaseInterface();
+	~DatabaseCommandInterface();
 
 	void getResults(std::string query);
 	/*
@@ -169,7 +169,7 @@ private:
 	 */
 };
 
-class Notifications {
+class DatabaseNotificationInterface {
 	/*
 	 * The Notification object handles querying the database for notifications,
 	 * iterating through the notifications, generating a packet to send,
@@ -180,8 +180,8 @@ class Notifications {
 	 * This object should only be used within the notifications thread
 	 */
 public:
-	Notifications(MySQLDatabaseInterface* dbInterface);
-	~Notifications();
+	DatabaseNotificationInterface(DatabaseCommandInterface* dbInterface);
+	~DatabaseNotificationInterface();
 
 	int getNotifications(void);
 	/*
@@ -211,7 +211,7 @@ public:
 	 */
 
 private:
-	MySQLDatabaseInterface* databaseInterface;
+	DatabaseCommandInterface* databaseInterface;
 };
 
 #endif /* MYSQL_LIB_H_ */
