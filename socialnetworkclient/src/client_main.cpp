@@ -22,15 +22,11 @@ using namespace std;
 
 string username;
 unsigned int sessionID;
-const char * getCommand(int enumVal)
-{
-  return commandList[enumVal];
-}
 
 void getLoginInfo(string &pw);
 int enterLoginMode(string servername, int serverport);
 int enterWebBrowserMode(string servername, int serverport);
-int getAddrInfo(string host, string port, struct addrinfo **serv_info);
+
 
 int main(int argc, char *argv[])
 {
@@ -149,29 +145,9 @@ void getLoginInfo(string &pw)
 
     cout<<"Enter User Name:";
     cin>>username;
-    password = getpass("\nEnter Password:");
+    password = getpass("Enter Password:");
     cout<<endl;
     pw = to_string(hashfun(password));
     return;
 }
 
-/**
- * getAddrInfo() - get addr info of server
- * host: server host information
- * port: server port
- * serv_info: to store server information
- * return addinfo status
- */
-int getAddrInfo(string host, string port, struct addrinfo **serv_info)
-{
-	struct addrinfo hints;
-	int addr_info;
-
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family		= AF_INET;
-	hints.ai_socktype	= SOCK_STREAM;
-	hints.ai_protocol	= 0;
-	hints.ai_flags		= 0;
-	addr_info		= getaddrinfo(host.c_str(), port.c_str(), &hints, serv_info);
-	return addr_info;
-}
