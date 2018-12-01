@@ -19,7 +19,6 @@
 
 extern string username;
 extern const char * getCommand(int enumVal);
-extern char *error;
 extern unsigned int sessionID;
 
 using namespace std;
@@ -35,8 +34,6 @@ void createLoginPacket(string username, string pw, struct packet &pkt);
 void createPostPacket(string postee, string post, struct packet &pkt);
 void createShowPacket(string wallOwner, struct packet &pkt);
 
-#define DEBUG
-#define ERR_LEN 256
 
 int req_num;
 
@@ -47,7 +44,6 @@ int req_num;
 void readThread(int sock_fd)
 {
     /*Print the list of commands*/
-	DEBUG("Inside read thread\n");
     int cmd_entered;
     string input;
 
@@ -225,7 +221,6 @@ int sendPacket(int sock_fd, enum commands cmd_code, string value1, string value2
     	printf("Error (write_socket)\n");
         return -1;
     }
-    DEBUG("%d bytes sent\n", send_bytes);
     return 0;
 }
 
