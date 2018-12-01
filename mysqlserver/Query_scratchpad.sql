@@ -92,17 +92,18 @@ DROP DATABASE `SocialNetwork`;
 /*------------------------------------------------------------*/
 
 select * from Notifications where readFlag=0;
-SELECT * FROM (SELECT * FROM SocialNetwork.InteractionLog WHERE sessionID = ? ORDER BY TIMESTAMP DESC LIMIT 1) TEMP WHERE ADDTIME(TIMESTAMP, CONCAT('00:', ? ,':00')) > NOW() AND logout <> 1;
-select userID, 
-sessionID, 
-row_number()/* over (partition by sessionID order by timestamp desc) as test*/
-from InteractionLog;
 
-select distinct userID from (
-select IntLog2.*, IntLog1.userID, IntLog1.timestamp, IntLog1.logout from 
-(select sessionID, max(timestamp) maxTimestamp from InteractionLog group by sessionID) IntLog2 join 
-(select userID, sessionID, timestamp, logout from InteractionLog) IntLog1 
-on IntLog1.sessionID = IntLog2.sessionID 
+select OnlineUsers.socketDescriptor, Notifications.notificationID, 
+Posts.content, Poster.userName poster, Postee.userName postee
+from (select IntLog2.userID, IntLog1.socketDescriptor from 
+(select userID, max(timestamp) maxTimestamp from InteractionLog group by userID) IntLog2 join 
+(select userID, timestamp, logout, socketDescriptor from InteractionLog) IntLog1 
+on IntLog1.userID = IntLog2.userID 
 and IntLog1.timestamp = IntLog2.maxTimestamp
 where logout <>1
-and ADDTIME(TIMESTAMP, CONCAT('00:', 20 ,':00')) > NOW()) ActiveSessions
+and ADDTIME(TIMESTAMP, CONCAT('00:', 50 ,':00')) > NOW()) OnlineUsers 
+join Notifications on OnlineUsers.userID = Notifications.userID
+join Posts on Posts.postID = Notifications.postID
+join Users Poster on Poster.userID = Posts.posterUserID
+join Users Postee on Postee.userID = Posts.posteeUserID
+where Notifications.readFlag = 0

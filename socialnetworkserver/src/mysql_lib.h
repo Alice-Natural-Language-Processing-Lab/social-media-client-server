@@ -41,7 +41,7 @@ class DatabaseCommandInterface {
 	 * It handles database connections only within a thread.
 	 */
 public:
-	int session_timeout = 15; // in minutes between 0 and 59
+	unsigned int session_timeout = 15; // in minutes between 0 and 59. Should be set the same across all threads
 	unsigned int session_id_max = UINT_MAX;
 
 	DatabaseCommandInterface(MySQLDatabaseDriver databaseDriver,
@@ -175,12 +175,18 @@ class DatabaseNotificationInterface {
 	 * iterating through the notifications, generating a packet to send,
 	 * and updating the database if a notification is successfully sent to the client.
 	 *
-	 * It requires a MySQLDatabaseInteface to have been initialized and passed to it.
+	 * It requires a MySQLDatabaseDriver to have been initialized and passed to it.
 	 *
 	 * This object should only be used within the notifications thread
+	 *
+	 * Thread safety: Should only be used in one thread at a time
 	 */
 public:
-	DatabaseNotificationInterface(DatabaseCommandInterface* dbInterface);
+	int session_timeout = 15; // in minutes between 0 and 59. Should be set the same across all threads
+
+	DatabaseNotificationInterface(MySQLDatabaseDriver databaseDriver,
+			std::string server_url, std::string server_username,
+			std::string server_password, std::string server_database);
 	~DatabaseNotificationInterface();
 
 	int getNotifications(void);
@@ -189,7 +195,7 @@ public:
 	 * to process.
 	 *
 	 * Returns:
-	 * 0 if successful
+	 * 0 or positive int if successful
 	 * -2 if server error
 	 */
 
@@ -197,21 +203,37 @@ public:
 	/*
 	 * Iterates the Notification object to the next entry. Returns true if the entry exists.
 	 * Starts on an empty "0th" entry so much be called once to get to the first entry.
+	 *
+	 * Returns:
+	 * -2 if server error
 	 */
 
 	int sendNotification(struct packet& pkt);
 	/*
 	 * Generates the notification packet and returns the socket descriptor to send it to.
-	 * Returns -1 if fails.
+	 * Returns:
+	 * -1 if fails.
+	 * -2 if server error
 	 */
 	int markRead(void);
 	/*
 	 * Marks the current notification as read (acknowledged by client code).
-	 * Returns 0 if successful.
+	 * Returns:
+	 * 0 if successful.
+	 * -2 if server error
 	 */
 
 private:
-	DatabaseCommandInterface* databaseInterface;
+	sql::Driver* driver;
+	sql::Connection* con;
+	sql::Statement* stmt;
+	sql::PreparedStatement* pstmt;
+	sql::ResultSet* res;
+	sql::ResultSetMetaData* result_set_meta_data;
+	bool notifications_generated = false;
+	/* used for garbage collection of statements and result sets and to
+	 * ensure that functions aren't run on uncreated statements
+	 */
 };
 
 #endif /* MYSQL_LIB_H_ */

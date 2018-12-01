@@ -19,62 +19,67 @@
 
 using namespace std;
 
-void test_hasValidSession(DatabaseCommandInterface& database);
-void test_getResults(DatabaseCommandInterface& database);
-void test_login(DatabaseCommandInterface& database);
-void test_listUsers(DatabaseCommandInterface& database);
-void test_showWall(DatabaseCommandInterface& database);
-void test_postOnWall(DatabaseCommandInterface& database);
-void test_logout(DatabaseCommandInterface& database);
+void test_hasValidSession(DatabaseCommandInterface& commandInterface);
+void test_getResults(DatabaseCommandInterface& commandInterface);
+void test_login(DatabaseCommandInterface& commandInterface);
+void test_listUsers(DatabaseCommandInterface& commandInterface);
+void test_showWall(DatabaseCommandInterface& commandInterface);
+void test_postOnWall(DatabaseCommandInterface& commandInterface);
+void test_logout(DatabaseCommandInterface& commandInterface);
+void test_notifications(DatabaseNotificationInterface& notificationInterface);
 
 packet test_packet1, test_packet2, test_packet3;
 
 int main() {
 
 	MySQLDatabaseDriver databaseDriver;
-	DatabaseCommandInterface database(databaseDriver, SERVER_URL,
+	DatabaseCommandInterface commandInterface(databaseDriver, SERVER_URL,
 	SERVER_USERNAME,
 	SERVER_PASSWORD, SERVER_DATABASE);
-	DatabaseNotificationInterface notifications(&database);
+	DatabaseNotificationInterface notificationInterface(databaseDriver,
+	SERVER_URL,
+	SERVER_USERNAME,
+	SERVER_PASSWORD, SERVER_DATABASE);
 
 	while (true) {
 		//test_getResults(database);
-		test_login(database);
+		test_login(commandInterface);
 		//test_listUsers(database);
-		test_postOnWall(database);
-		test_showWall(database);
+		test_postOnWall(commandInterface);
+		test_showWall(commandInterface);
 		//test_logout(database);
-		test_hasValidSession(database);
+		test_hasValidSession(commandInterface);
+		test_notifications(notificationInterface);
 		getchar();
 	}
 
 	exit(0);
 }
 
-void test_hasValidSession(DatabaseCommandInterface& database) {
+void test_hasValidSession(DatabaseCommandInterface& commandInterface) {
 
 	//string timeout;
 	//test_packet1.sessionId = 3456789012;
 	//test_packet2.sessionId = 2345678901;
 
 	//getline(cin, timeout);
-	//database.session_timeout = atoi(timeout.c_str());
+	//commandInterface.session_timeout = atoi(timeout.c_str());
 
-	cout << "test packet1:" << database.hasValidSession(test_packet1) << "\n"
-			<< test_packet1.contents.rcvd_cnts << endl;
-	cout << "test packet2:" << database.hasValidSession(test_packet2) << "\n"
-			<< test_packet2.contents.rcvd_cnts << endl;
+	cout << "test packet1:" << commandInterface.hasValidSession(test_packet1)
+			<< "\n" << test_packet1.contents.rcvd_cnts << endl;
+	cout << "test packet2:" << commandInterface.hasValidSession(test_packet2)
+			<< "\n" << test_packet2.contents.rcvd_cnts << endl;
 }
 
-void test_getResults(DatabaseCommandInterface& database) {
+void test_getResults(DatabaseCommandInterface& commandInterface) {
 
 	string query;
 
 	getline(cin, query);
-	database.getResults(query);
+	commandInterface.getResults(query);
 }
 
-void test_login(DatabaseCommandInterface& database) {
+void test_login(DatabaseCommandInterface& commandInterface) {
 
 	unsigned int socket_descriptor_test = 5;
 	test_packet1.contents.username = "alex";
@@ -84,9 +89,9 @@ void test_login(DatabaseCommandInterface& database) {
 	test_packet3.contents.username = "cris";
 	test_packet3.contents.password = "11740314204215096121";
 
-	database.login(test_packet1, socket_descriptor_test);
-	database.login(test_packet2, socket_descriptor_test);
-	database.login(test_packet3, socket_descriptor_test);
+	commandInterface.login(test_packet1, socket_descriptor_test);
+	commandInterface.login(test_packet2, socket_descriptor_test);
+	commandInterface.login(test_packet3, socket_descriptor_test);
 	cout << "test_packet1:" << endl << "sessionid: " << test_packet1.sessionId
 			<< endl << "rcvd_contents: " << test_packet1.contents.rcvd_cnts
 			<< endl;
@@ -98,53 +103,59 @@ void test_login(DatabaseCommandInterface& database) {
 			<< endl;
 }
 
-void test_listUsers(DatabaseCommandInterface& database) {
+void test_listUsers(DatabaseCommandInterface& commandInterface) {
 
-	database.listUsers(test_packet1);
+	commandInterface.listUsers(test_packet1);
 	cout << "test_packet1:\n" << test_packet1.contents.rcvd_cnts << endl;
 }
 
-void test_showWall(DatabaseCommandInterface& database) {
+void test_showWall(DatabaseCommandInterface& commandInterface) {
 
 	test_packet1.contents.wallOwner = "alex";
 
-	database.showWall(test_packet1);
+	commandInterface.showWall(test_packet1);
 	cout << "test_packet1:\n" << test_packet1.contents.rcvd_cnts << endl;
 
 	test_packet1.contents.wallOwner = "cris";
 
-	database.showWall(test_packet1);
+	commandInterface.showWall(test_packet1);
 	cout << "test_packet2:\n" << test_packet1.contents.rcvd_cnts << endl;
 
 	test_packet1.contents.wallOwner = "ben";
 
-	database.showWall(test_packet1);
+	commandInterface.showWall(test_packet1);
 	cout << "test_packet3:\n" << test_packet1.contents.rcvd_cnts << endl;
 }
 
-void test_postOnWall(DatabaseCommandInterface& database) {
+void test_postOnWall(DatabaseCommandInterface& commandInterface) {
 
 	test_packet1.contents.postee = "cris";
 	test_packet1.contents.post = "Hey! Wanna eat some ice cream!";
 
-	database.postOnWall(test_packet1);
+	commandInterface.postOnWall(test_packet1);
 	cout << "test_packet1:\n" << test_packet1.contents.rcvd_cnts << endl;
 
 	test_packet2.contents.postee = "ben";
 	test_packet2.contents.post = "Hey! Wanna eat some ice cream!";
 
-	database.postOnWall(test_packet2);
+	commandInterface.postOnWall(test_packet2);
 	cout << "test_packet1:\n" << test_packet2.contents.rcvd_cnts << endl;
 }
 
-void test_logout(DatabaseCommandInterface& database) {
+void test_logout(DatabaseCommandInterface& commandInterface) {
 
-	database.logout(test_packet1);
+	commandInterface.logout(test_packet1);
 	cout << "test_packet1:\n" << test_packet1.contents.rcvd_cnts << endl;
 
-	database.logout(test_packet1);
+	commandInterface.logout(test_packet1);
 	cout << "test_packet1:\n" << test_packet1.contents.rcvd_cnts << endl;
 
-	database.logout(test_packet2);
+	commandInterface.logout(test_packet2);
 	cout << "test_packet2:\n" << test_packet2.contents.rcvd_cnts << endl;
+}
+
+void test_notifications(DatabaseNotificationInterface& notificationInterface) {
+
+	cout << "notification interface:\n"
+			<< notificationInterface.getNotifications() << endl;
 }

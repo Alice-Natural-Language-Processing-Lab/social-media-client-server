@@ -87,7 +87,7 @@ int DatabaseCommandInterface::hasValidSession(struct packet& pkt,
 								"sessionID = ? ORDER BY TIMESTAMP DESC LIMIT 1) TEMP WHERE "
 								"ADDTIME(TIMESTAMP, CONCAT('00:', ? ,':00')) > NOW() AND logout <> 1");
 		pstmt->setUInt(1, pkt.sessionId);
-		pstmt->setInt(2, session_timeout);
+		pstmt->setUInt(2, session_timeout);
 		res = pstmt->executeQuery();
 
 		//printResults();
@@ -365,7 +365,7 @@ int DatabaseCommandInterface::postOnWall(struct packet &pkt) {
 		pstmt =
 				con->prepareStatement(
 						"insert into Posts (posterUserID, posteeUserID, content) "
-						"select ?, postee.userID, ? from Users postee where postee.userName = ?");
+								"select ?, postee.userID, ? from Users postee where postee.userName = ?");
 		pstmt->setUInt(1, poster_id);
 		pstmt->setString(2, pkt.contents.post);
 		pstmt->setString(3, pkt.contents.postee);
@@ -533,7 +533,7 @@ int DatabaseCommandInterface::insertInteractionLog(unsigned int session_id,
 		pstmt =
 				con->prepareStatement(
 						"insert into InteractionLog (userID, sessionID, logout, socketDescriptor, command) "
-						"values (?, ?, ?, ?, ?)");
+								"values (?, ?, ?, ?, ?)");
 		pstmt->setUInt(1, user_id);
 		pstmt->setUInt(2, session_id);
 		pstmt->setBoolean(3, logout);
@@ -606,50 +606,103 @@ int DatabaseCommandInterface::getUserID(std::string user_name,
 	return -2;
 }
 
-DatabaseNotificationInterface::DatabaseNotificationInterface(DatabaseCommandInterface* dbInterface) {
+DatabaseNotificationInterface::DatabaseNotificationInterface(
+		MySQLDatabaseDriver databaseDriver, std::string server_url,
+		std::string server_username, std::string server_password,
+		std::string server_database) {
 
-	databaseInterface = dbInterface;
+	driver = databaseDriver.driver;
+	try {
+		con = driver->connect(server_url, server_username, server_password);
+		con->setSchema(server_database);
+	} catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+	}
 }
 
 DatabaseNotificationInterface::~DatabaseNotificationInterface() {
 
+	if (notifications_generated == true) {
+		//garbage collection
+		delete pstmt;
+		delete res;
+	}
+	delete con;
 }
 
 int DatabaseNotificationInterface::getNotifications(void) {
-	/*
-	 *This query should give me users that are eligible for notifications
-	 *
-	 select OnlineUsers.socketDescriptor, Notifications.notificationID,
-Posts.content, Poster.userName poster, Postee.userName postee
-from (select IntLog2.userID, IntLog1.socketDescriptor from
-(select userID, max(timestamp) maxTimestamp from InteractionLog group by userID) IntLog2 join
-(select userID, timestamp, logout, socketDescriptor from InteractionLog) IntLog1
-on IntLog1.userID = IntLog2.userID
-and IntLog1.timestamp = IntLog2.maxTimestamp
-where logout <>1
-and ADDTIME(TIMESTAMP, CONCAT('00:', 50 ,':00')) > NOW()) OnlineUsers
-join Notifications on OnlineUsers.userID = Notifications.userID
-join Posts on Posts.postID = Notifications.postID
-join Users Poster on Poster.userID = Posts.posterUserID
-join Users Postee on Postee.userID = Posts.posteeUserID
-where Notifications.readFlag = 0
-	 */
 
+	if (notifications_generated == true) {
+		//garbage collection
+		delete pstmt;
+		delete res;
+	} else {
+		notifications_generated = true;
+	}
+	try {
+		pstmt =
+				con->prepareStatement(
+						"select OnlineUsers.socketDescriptor, Notifications.notificationID, "
+								"Posts.content, Poster.userName poster, Postee.userName postee "
+								"from (select IntLog2.userID, IntLog1.socketDescriptor from "
+								"(select userID, max(timestamp) maxTimestamp from InteractionLog group by userID) IntLog2 join "
+								"(select userID, timestamp, logout, socketDescriptor from InteractionLog) IntLog1 "
+								"on IntLog1.userID = IntLog2.userID "
+								"and IntLog1.timestamp = IntLog2.maxTimestamp "
+								"where logout <>1 "
+								"and ADDTIME(TIMESTAMP, CONCAT('00:', ? ,':00')) > NOW()) OnlineUsers "
+								"join Notifications on OnlineUsers.userID = Notifications.userID "
+								"join Posts on Posts.postID = Notifications.postID "
+								"join Users Poster on Poster.userID = Posts.posterUserID "
+								"join Users Postee on Postee.userID = Posts.posteeUserID "
+								"where Notifications.readFlag = 0");
+		pstmt->setUInt(1, session_timeout);
+		res = pstmt->executeQuery();
 
-	return 0;
+		return res->rowsCount();
+
+	} catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+
+		return -2;
+	}
+
+	return -2;
 }
 
 int DatabaseNotificationInterface::next(void) {
 
+	if (notifications_generated == false) {
+		//can't run function until notifications are generated
+		return -2;
+	}
 	return 0;
 }
 
 int DatabaseNotificationInterface::sendNotification(struct packet& pkt) {
 
+	if (notifications_generated == false) {
+		//can't run function until notifications are generated
+		return -2;
+	}
 	return 0;
 }
 
 int DatabaseNotificationInterface::markRead(void) {
 
+	if (notifications_generated == false) {
+		//can't run function until notifications are generated
+		return -2;
+	}
 	return 0;
 }
