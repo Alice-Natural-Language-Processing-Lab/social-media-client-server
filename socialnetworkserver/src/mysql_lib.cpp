@@ -686,7 +686,30 @@ int DatabaseNotificationInterface::next(void) {
 		//can't run function until notifications are generated
 		return -2;
 	}
-	return 0;
+	try {
+		if (res->isLast()) {
+			//reached end of notifications
+			delete pstmt;
+			delete res;
+			notifications_generated = false;
+			return -1;
+		} else {
+			res->next();
+			return 0;
+		}
+
+	} catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+
+		return -2;
+	}
+
+	return -2;
 }
 
 int DatabaseNotificationInterface::sendNotification(struct packet& pkt) {
