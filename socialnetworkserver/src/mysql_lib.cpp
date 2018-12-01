@@ -725,6 +725,11 @@ int DatabaseNotificationInterface::sendNotification(struct packet& pkt) {
 		return -2;
 	}
 	try {
+		pkt.cmd_code = NOTIFY;
+		pkt.contents.rcvd_cnts = wall_entry_format(res->getString("timestamp"),
+				res->getString("poster"), res->getString("postee"),
+				res->getString("content"));
+		return res->getInt("socketDescriptor");
 
 	} catch (sql::SQLException &e) {
 		std::cout << "# ERR: SQLException in " << __FILE__;

@@ -162,5 +162,8 @@ void test_notifications(DatabaseNotificationInterface& notificationInterface) {
 	while (i > 0) {
 		i = notificationInterface.next();
 		cout << i << endl;
+		cout << "socket: "
+				<< notificationInterface.sendNotification(test_packet1) << endl
+				<< test_packet1.contents.rcvd_cnts << endl;
 	}
 }

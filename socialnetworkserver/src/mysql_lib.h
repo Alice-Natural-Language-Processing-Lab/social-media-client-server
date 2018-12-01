@@ -24,7 +24,8 @@
 
 #include "structures.h"
 
-string wall_entry_format(string timestamp, string poster, string postee, string content);
+string wall_entry_format(string timestamp, string poster, string postee,
+		string content);
 //formats wall entry consistently across classes
 
 class MySQLDatabaseDriver {
@@ -216,9 +217,9 @@ public:
 	int sendNotification(struct packet& pkt);
 	/*
 	 * Generates the notification packet and returns the socket descriptor to send it to.
+	 *
 	 * Returns:
 	 * socket descriptor if successful
-	 * -1 if fails.
 	 * -2 if server error
 	 */
 	int markRead(void);
