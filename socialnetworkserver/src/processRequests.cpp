@@ -23,23 +23,19 @@ unsigned int sessionID;
  * req: request structure
  * return 0(request processed successfully) -1(request processing failed)
  */
-int processRequest(int sock_fd, struct packet *req)
+int processRequest(int sock_fd, struct packet &req)
 {
-	struct packet pkt;
 
-	memset(&pkt, 0, sizeof(pkt));
-	memcpy(&pkt, req, sizeof(pkt));
-
-	if (req->cmd_code == LOGIN)
-		userLogin(sock_fd, pkt);
-	else if(req->cmd_code == LOGOUT)
-		userLogout(sock_fd, pkt);
-	else if(req->cmd_code == LIST)
-		listAllUsers(sock_fd, pkt);
-	else if(req->cmd_code == POST)
-		postMessage(sock_fd, pkt);
-	else if(req->cmd_code == SHOW)
-		showWallMessage(sock_fd, pkt);
+	if (req.cmd_code == LOGIN)
+		userLogin(sock_fd, req);
+	else if(req.cmd_code == LOGOUT)
+		userLogout(sock_fd, req);
+	else if(req.cmd_code == LIST)
+		listAllUsers(sock_fd, req);
+	else if(req.cmd_code == POST)
+		postMessage(sock_fd, req);
+	else if(req.cmd_code == SHOW)
+		showWallMessage(sock_fd, req);
 	else
 		printf("Invalid Option\n");
 	return 0;
@@ -49,7 +45,7 @@ int processRequest(int sock_fd, struct packet *req)
  * userLogin() - login request for user
  * req: request structure
  */
-void userLogin(int sock_fd, struct packet req)
+void userLogin(int sock_fd, struct packet &req)
 {
 	int ret = 0, snd;
 
@@ -79,7 +75,7 @@ void userLogin(int sock_fd, struct packet req)
  * listAllUsers() - List all users in the DB
  * req: request structure
  */
-void listAllUsers(int sock_fd, struct packet req)
+void listAllUsers(int sock_fd, struct packet &req)
 {
 	int ret = 0, snd;
 
@@ -104,7 +100,7 @@ void listAllUsers(int sock_fd, struct packet req)
  * postMessage() - Post a message to a user's wall
  * req: request structure
  */
-void postMessage(int sock_fd, struct packet req)
+void postMessage(int sock_fd, struct packet &req)
 {
 	int ret = 0, snd;
 
@@ -128,7 +124,7 @@ void postMessage(int sock_fd, struct packet req)
  * showWallMessage() - show a user's wall
  * req: request structure
  */
-void showWallMessage(int sock_fd, struct packet req)
+void showWallMessage(int sock_fd, struct packet &req)
 {
 	int ret, snd;
 
@@ -154,7 +150,7 @@ void showWallMessage(int sock_fd, struct packet req)
  * userLogout() - logout request for user
  * req: request structure
  */
-void userLogout(int sock_fd, struct packet req)
+void userLogout(int sock_fd, struct packet &req)
 {
 	int ret;
 

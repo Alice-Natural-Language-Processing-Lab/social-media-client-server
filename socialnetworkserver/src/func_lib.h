@@ -39,12 +39,12 @@ int parsePacket(struct packet *req);
 int sessionValidity(struct packet *req);
 
 /* processRequests.cpp */
-int processRequest(int sock_fd, struct packet *req);
-void userLogin(int sock_fd, struct packet req);
-void userLogout(int sock_fd, struct packet req);
-void listAllUsers(int sock_fd, struct packet req);
-void postMessage(int sock_fd, struct packet req);
-void showWallMessage(int sock_fd, struct packet req);
+int processRequest(int sock_fd, struct packet &req);
+void userLogin(int sock_fd, struct packet &req);
+void userLogout(int sock_fd, struct packet &req);
+void listAllUsers(int sock_fd, struct packet &req);
+void postMessage(int sock_fd, struct packet &req);
+void showWallMessage(int sock_fd, struct packet &req);
 int sendPacket(int sock_fd, struct packet &resp);
 
 /* processNotifications.cpp */

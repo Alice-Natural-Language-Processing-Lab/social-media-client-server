@@ -65,7 +65,7 @@ void handleClient(int sock_fd)
 		}
 
 		/* process the request */
-		ret = processRequest(sock_fd, &req);
+		ret = processRequest(sock_fd, req);
 		if (ret < 0)
 			break;
 	}
