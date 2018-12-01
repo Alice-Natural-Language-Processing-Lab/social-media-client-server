@@ -635,8 +635,8 @@ DatabaseNotificationInterface::~DatabaseNotificationInterface() {
 
 	if (notifications_generated == true) {
 		//garbage collection
-		delete pstmt;
-		delete res;
+		delete pstmt_get_notifications;
+		delete res_get_notifications;
 	}
 	delete con;
 }
@@ -645,13 +645,13 @@ int DatabaseNotificationInterface::getNotifications(void) {
 
 	if (notifications_generated == true) {
 		//garbage collection
-		delete pstmt;
-		delete res;
+		delete pstmt_get_notifications;
+		delete res_get_notifications;
 	} else {
 		notifications_generated = true;
 	}
 	try {
-		pstmt =
+		pstmt_get_notifications =
 				con->prepareStatement(
 						"select OnlineUsers.socketDescriptor, Notifications.notificationID, "
 								"Posts.content, Posts.timestamp, Poster.userName poster, Postee.userName postee "
@@ -667,10 +667,10 @@ int DatabaseNotificationInterface::getNotifications(void) {
 								"join Users Poster on Poster.userID = Posts.posterUserID "
 								"join Users Postee on Postee.userID = Posts.posteeUserID "
 								"where Notifications.readFlag = 0");
-		pstmt->setUInt(1, session_timeout);
-		res = pstmt->executeQuery();
+		pstmt_get_notifications->setUInt(1, session_timeout);
+		res_get_notifications = pstmt_get_notifications->executeQuery();
 
-		return res->rowsCount();
+		return res_get_notifications->rowsCount();
 
 	} catch (sql::SQLException &e) {
 		std::cout << "# ERR: SQLException in " << __FILE__;
@@ -693,15 +693,15 @@ int DatabaseNotificationInterface::next(void) {
 		return -2;
 	}
 	try {
-		if (res->isLast()) {
+		if (res_get_notifications->isLast()) {
 			//reached end of notifications
-			delete pstmt;
-			delete res;
+			delete pstmt_get_notifications;
+			delete res_get_notifications;
 			notifications_generated = false;
 			return -1;
 		} else {
-			res->next();
-			return res->getRow();
+			res_get_notifications->next();
+			return res_get_notifications->getRow();
 		}
 
 	} catch (sql::SQLException &e) {
@@ -726,10 +726,12 @@ int DatabaseNotificationInterface::sendNotification(struct packet& pkt) {
 	}
 	try {
 		pkt.cmd_code = NOTIFY;
-		pkt.contents.rcvd_cnts = wall_entry_format(res->getString("timestamp"),
-				res->getString("poster"), res->getString("postee"),
-				res->getString("content"));
-		return res->getInt("socketDescriptor");
+		pkt.contents.rcvd_cnts = wall_entry_format(
+				res_get_notifications->getString("timestamp"),
+				res_get_notifications->getString("poster"),
+				res_get_notifications->getString("postee"),
+				res_get_notifications->getString("content"));
+		return res_get_notifications->getInt("socketDescriptor");
 
 	} catch (sql::SQLException &e) {
 		std::cout << "# ERR: SQLException in " << __FILE__;
@@ -752,6 +754,18 @@ int DatabaseNotificationInterface::markRead(void) {
 		return -2;
 	}
 	try {
+		pstmt_mark_read = con->prepareStatement("update Notifications "
+				"set readFlag = 1 "
+				"where notificationID = ?");
+		pstmt_mark_read->setUInt(1,
+				res_get_notifications->getUInt("notificationID"));
+		if (pstmt_mark_read->executeUpdate() != 1) {
+			delete pstmt_mark_read;
+			return -2;
+		}
+
+		delete pstmt_mark_read;
+		return res_get_notifications->getRow();
 
 	} catch (sql::SQLException &e) {
 		std::cout << "# ERR: SQLException in " << __FILE__;

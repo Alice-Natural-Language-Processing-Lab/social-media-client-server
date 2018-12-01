@@ -91,19 +91,3 @@ DROP DATABASE `SocialNetwork`;
 
 /*------------------------------------------------------------*/
 
-select * from Notifications where readFlag=0;
-
-select OnlineUsers.socketDescriptor, Notifications.notificationID, 
-Posts.content, Poster.userName poster, Postee.userName postee
-from (select IntLog2.userID, IntLog1.socketDescriptor from 
-(select userID, max(timestamp) maxTimestamp from InteractionLog group by userID) IntLog2 join 
-(select userID, timestamp, logout, socketDescriptor from InteractionLog) IntLog1 
-on IntLog1.userID = IntLog2.userID 
-and IntLog1.timestamp = IntLog2.maxTimestamp
-where logout <>1
-and ADDTIME(TIMESTAMP, CONCAT('00:', 50 ,':00')) > NOW()) OnlineUsers 
-join Notifications on OnlineUsers.userID = Notifications.userID
-join Posts on Posts.postID = Notifications.postID
-join Users Poster on Poster.userID = Posts.posterUserID
-join Users Postee on Postee.userID = Posts.posteeUserID
-where Notifications.readFlag = 0

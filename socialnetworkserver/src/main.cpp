@@ -36,12 +36,13 @@ int main() {
 	DatabaseCommandInterface commandInterface(databaseDriver, SERVER_URL,
 	SERVER_USERNAME,
 	SERVER_PASSWORD, SERVER_DATABASE);
-	DatabaseNotificationInterface notificationInterface(databaseDriver,
-	SERVER_URL,
-	SERVER_USERNAME,
-	SERVER_PASSWORD, SERVER_DATABASE);
+	{
+		DatabaseNotificationInterface notificationInterface(databaseDriver,
+		SERVER_URL,
+		SERVER_USERNAME,
+		SERVER_PASSWORD, SERVER_DATABASE);
 
-	while (true) {
+		//while (true){
 		//test_getResults(database);
 		test_login(commandInterface);
 		//test_listUsers(database);
@@ -50,7 +51,7 @@ int main() {
 		//test_logout(database);
 		test_hasValidSession(commandInterface);
 		test_notifications(notificationInterface);
-		getchar();
+		//getchar();
 	}
 
 	exit(0);
@@ -159,11 +160,13 @@ void test_notifications(DatabaseNotificationInterface& notificationInterface) {
 	cout << "notification interface:\n"
 			<< notificationInterface.getNotifications() << endl;
 	int i = 1;
-	while (i > 0) {
+	//while (i > 0)
+	{
 		i = notificationInterface.next();
 		cout << i << endl;
 		cout << "socket: "
 				<< notificationInterface.sendNotification(test_packet1) << endl
 				<< test_packet1.contents.rcvd_cnts << endl;
+		cout << "read: " << notificationInterface.markRead() << endl;
 	}
 }

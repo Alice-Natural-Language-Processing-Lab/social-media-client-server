@@ -225,18 +225,18 @@ public:
 	int markRead(void);
 	/*
 	 * Marks the current notification as read (acknowledged by client code).
+	 *
 	 * Returns:
-	 * 0 if successful.
+	 * row number of notification if successful.
 	 * -2 if server error
 	 */
 
 private:
 	sql::Driver* driver;
 	sql::Connection* con;
-	sql::Statement* stmt;
-	sql::PreparedStatement* pstmt;
-	sql::ResultSet* res;
-	sql::ResultSetMetaData* result_set_meta_data;
+	sql::PreparedStatement* pstmt_get_notifications;
+	sql::ResultSet* res_get_notifications;
+	sql::PreparedStatement* pstmt_mark_read;
 	bool notifications_generated = false;
 	/* used for garbage collection of statements and result sets and to
 	 * ensure that functions aren't run on uncreated statements
