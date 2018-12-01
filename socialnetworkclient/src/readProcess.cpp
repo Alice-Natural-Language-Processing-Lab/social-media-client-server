@@ -18,7 +18,6 @@
 #include "networking.h"
 
 extern string username;
-extern const char * getCommand(int enumVal);
 extern unsigned int sessionID;
 
 using namespace std;
@@ -35,8 +34,6 @@ void createPostPacket(string postee, string post, struct packet &pkt);
 void createShowPacket(string wallOwner, struct packet &pkt);
 
 
-int req_num;
-
 /*
  * readThread() - thread to handle user input from stdin
  * sock_fd: socket file descriptor
@@ -52,7 +49,6 @@ void readThread(int sock_fd)
     while(1)
     {
     	getline(std::cin, input);
-    	//cmd_entered = atoi(input.c_str());
         if (strcmp(input.c_str(), "0") == 0)
         {
             printCmdList();
