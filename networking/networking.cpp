@@ -11,6 +11,9 @@ bool isServer = false;
 struct packet bufferPkt;
 bool bufferOccupied = false;
 
+pthread_mutex_t seqNumlock;
+pthread_mutex_t bufferPktlock;
+
 int create_server_socket(int portNum) {
 	isServer = true;
 	int socketfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -359,7 +362,7 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 
 void deepCopyPkt(struct packet &destination, struct packet source) {
 	destination.content_len = source.content_len;
-	destination.cmd_code = source.content_len;
+	destination.cmd_code = source.cmd_code;
 	destination.req_num = source.req_num;
     destination.sessionId = source.sessionId;
     destination.contents.username = source.contents.username;
@@ -372,8 +375,12 @@ void deepCopyPkt(struct packet &destination, struct packet source) {
 
 int write_socket(int socketfd, struct packet &pkt) {
 	if((isServer && pkt.cmd_code == NOTIFY) || (!isServer && pkt.cmd_code != ACK && pkt.cmd_code != NOTIFY)) {	//if the packet is a new request, assign a req-num to it
+		pthread_mutex_lock(&seqNumlock);
+
 		pkt.req_num = packetSeqNum;
 		packetSeqNum++;
+
+		pthread_mutex_unlock(&seqNumlock);
 	}
 
 	int contentLength = to_string(pkt.cmd_code).length() + to_string(pkt.req_num).length() + to_string(pkt.sessionId).length() + pkt.contents.username.length() + pkt.contents.password.length() + pkt.contents.postee.length() + pkt.contents.post.length() + pkt.contents.wallOwner.length() + pkt.contents.rcvd_cnts.length();
@@ -384,8 +391,10 @@ int write_socket(int socketfd, struct packet &pkt) {
 		return writeError;
 	
 	struct packet ackPkt;
+
+	pthread_mutex_lock(&bufferPktlock);
 	if(bufferOccupied) {
-		deepCopyPkt(acktPkt, bufferPkt);
+		deepCopyPkt(ackPkt, bufferPkt);
 		bufferOccupied = false;
 	} else {
 		struct timeval tv;
@@ -397,13 +406,13 @@ int write_socket(int socketfd, struct packet &pkt) {
 			return -5;
 		}
 
-		struct packet ackPkt;
 		int readError = read_socket_helper(socketfd, ackPkt);
 		if(readError <= 0) {
 			fprintf(stderr, "Failed to Read ACK Packet\n");
 			return -2;
 		}
 	}
+	pthread_mutex_unlock(&bufferPktlock);
 	if(ackPkt.content_len != pkt.content_len || ackPkt.cmd_code != ACK || ackPkt.req_num != pkt.req_num || ackPkt.sessionId != pkt.sessionId) {
 		fprintf(stderr, "ACK Packet does not match\n");
 		return -3;
@@ -424,17 +433,21 @@ int read_socket(int socketfd, struct packet &pkt) {
 		return -5;
 	}
 
+	Retry:
 	int readError = read_socket_helper(socketfd, pkt);
 	if(readError <= 0)	//error in reading
 		return readError;
 
 	if(pkt.cmd_code == ACK) {
+		pthread_mutex_lock(&bufferPktlock);
 		if(!bufferOccupied) {
 				deepCopyPkt(bufferPkt, pkt);
 				bufferOccupied = true;
+				goto Retry;
 		} else {
 			fprintf(stderr, "Recieved a ACK Packet, buffer Packet Queue Full\n");
 		}
+		pthread_mutex_unlock(&bufferPktlock);
 		return -4;
 	}
 
