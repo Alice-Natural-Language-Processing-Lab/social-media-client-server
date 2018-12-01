@@ -16,7 +16,7 @@ extern MySQLDatabaseDriver databaseDriver;
 #define SERVER_USERNAME "root"
 #define SERVER_PASSWORD "asdfgh"
 #define SERVER_DATABASE "SocialNetwork"
-#define DEBUG printf
+#define DEBUG
 int notify_variable;
 
 void processNotification()
@@ -26,7 +26,7 @@ void processNotification()
 	int ret = 0;
 	DatabaseNotificationInterface notify(databaseDriver, SERVER_URL, SERVER_USERNAME,
 			SERVER_PASSWORD, SERVER_DATABASE);
-	struct packet notifyPkt;
+
 	pthread_mutex_lock(&notify_mutex);
 
 	while (1)
@@ -44,7 +44,7 @@ void processNotification()
 		}
 		while ((ret > 0) && (notify.next() > 0))
 		{
-			memset(&notify, 0, sizeof(notify));
+			struct packet notifyPkt;
 			sock_fd = notify.sendNotification(notifyPkt);
 			DEBUG("Sock fd = %d\n", sock_fd);
 			if (sock_fd < 0)

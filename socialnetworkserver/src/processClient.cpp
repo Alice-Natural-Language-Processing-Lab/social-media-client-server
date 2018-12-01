@@ -10,7 +10,7 @@
 #include "structures.h"
 
 extern DatabaseCommandInterface database;
-
+extern unsigned int sessionID;
 using namespace std;
 
 /*
@@ -20,12 +20,12 @@ using namespace std;
 void handleClient(int sock_fd)
 {
 	int sock_read, ret;
-	struct packet req;
+
 
 	/* Accept the request persistently*/
 	while(1)
 	{
-		memset(&req, 0, sizeof(struct packet));
+		struct packet req;
 
 		/* Read client request */
 		sock_read = read_socket(sock_fd, req);
@@ -36,6 +36,7 @@ void handleClient(int sock_fd)
 		}
 		if (!sock_read ) /*Client connection EOF */
 		{
+			req.sessionId = sessionID;
 			ret = database.logout(req);
 			if (ret < 0)
 			{

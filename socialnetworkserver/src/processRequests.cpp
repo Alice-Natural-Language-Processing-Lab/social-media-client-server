@@ -67,6 +67,7 @@ void userLogin(int sock_fd, struct packet req)
 		pthread_exit(NULL);
 		return;
 	}
+	sessionID = req.sessionId;
 	pthread_mutex_lock(&notify_mutex);
 	notify_variable = 1;
 	pthread_cond_signal(&notify_cond);
