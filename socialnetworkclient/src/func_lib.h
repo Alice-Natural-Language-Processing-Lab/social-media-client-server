@@ -40,7 +40,6 @@ void createPostPacket(string postee, string post, struct packet &pkt);
 void createShowPacket(string wallOwner, struct packet &pkt);
 
 void writeThread(int sock_fd);
-int readResponse(int sock_fd, char *buffer, int req_len);
 int parsePacket(struct packet *req);
 void displayContents(struct packet *resp);
 int processResponse(int sock_fd, struct packet *resp);
