@@ -1,9 +1,4 @@
-/*
- * readProcess.cpp
- *
- *  Created on: Nov 14, 2018
- *      Author: pournami
- */
+
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -23,8 +18,6 @@
 #include "networking.h"
 
 extern string username;
-extern const char * getCommand(int enumVal);
-extern char *error;
 extern unsigned int sessionID;
 
 using namespace std;
@@ -40,10 +33,6 @@ void createLoginPacket(string username, string pw, struct packet &pkt);
 void createPostPacket(string postee, string post, struct packet &pkt);
 void createShowPacket(string wallOwner, struct packet &pkt);
 
-#define DEBUG
-#define ERR_LEN 256
-
-int req_num;
 
 /*
  * readThread() - thread to handle user input from stdin
@@ -52,32 +41,31 @@ int req_num;
 void readThread(int sock_fd)
 {
     /*Print the list of commands*/
-	DEBUG("Inside read thread\n");
     int cmd_entered;
     string input;
 
-    //printCmdList();
+    printCmdList();
+    cin.ignore();
     while(1)
     {
     	getline(std::cin, input);
-    	cmd_entered = atoi(input.c_str());
-        if (cmd_entered == 0)
+        if (strcmp(input.c_str(), "0") == 0)
         {
             printCmdList();
         }
-        else if (cmd_entered == 1)
+        else if (strcmp(input.c_str(), "1") == 0)
         {
             list(sock_fd);
         }
-        else if (cmd_entered == 2)
+        else if (strcmp(input.c_str(), "2") == 0)
         {
             post(sock_fd);
         }
-        else if (cmd_entered == 3)
+        else if (strcmp(input.c_str(), "3") == 0)
         {
         	show(sock_fd);
         }
-        else if (cmd_entered == 4)
+        else if (strcmp(input.c_str(), "4") == 0)
         {
         	logout(sock_fd);
         }
@@ -229,7 +217,6 @@ int sendPacket(int sock_fd, enum commands cmd_code, string value1, string value2
     	printf("Error (write_socket)\n");
         return -1;
     }
-    DEBUG("%d bytes sent\n", send_bytes);
     return 0;
 }
 
@@ -241,8 +228,6 @@ int sendPacket(int sock_fd, enum commands cmd_code, string value1, string value2
  */
 void createLoginPacket(string username, string pw, struct packet &pkt)
 {
-	//strcpy(pkt.contents.username, (const char *)username.c_str());
-	//strcpy(pkt.contents.password, (const char *)pw.c_str());
 	pkt.contents.username = username;
 	pkt.contents.password = pw;
 }
@@ -255,8 +240,6 @@ void createLoginPacket(string username, string pw, struct packet &pkt)
  */
 void createPostPacket(string postee, string post, struct packet &pkt)
 {
-	//strcpy(pkt.contents.postee, (const char *)postee.c_str());
-	//strcpy(pkt.contents.post, (const char *)post.c_str());
 	pkt.contents.postee = postee;
 	pkt.contents.post = post;
 }
@@ -268,7 +251,6 @@ void createPostPacket(string postee, string post, struct packet &pkt)
  */
 void createShowPacket(string wallOwner, struct packet &pkt)
 {
-	//strcpy(pkt.contents.wallOwner, (const char *)wallOwner.c_str());
 	pkt.contents.wallOwner = wallOwner;
 }
 
