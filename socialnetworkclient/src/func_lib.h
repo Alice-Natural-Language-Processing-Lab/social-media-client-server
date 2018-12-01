@@ -21,12 +21,10 @@
 
 using namespace std;
 
-static const char * commandList[] = { "LOGIN", "LOGOUT", "POST", "SHOW", "LIST", "NOTIFY", "ACK" };
-
 void getLoginInfo(string &pw);
 int enterLoginMode(string servername, int serverport);
 int enterWebBrowserMode(string servername, int serverport);
-int getAddrInfo(string host, string port, struct addrinfo **serv_info);
+
 
 void readThread(int sock_fd);
 int sendPacket(int sock_fd, enum commands cmd_code, string key, string value);
