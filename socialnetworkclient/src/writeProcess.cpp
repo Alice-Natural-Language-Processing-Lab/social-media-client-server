@@ -18,17 +18,11 @@
 #include "networking.h"
 
 extern const char * getCommand(int enumVal);
-extern time_t now;
-extern char *error;
 extern unsigned int sessionID;
 
 using namespace std;
 
-#define DEBUG
-#define ERR_LEN 256
-
 void writeThread(int sock_fd);
-int readResponse(int sock_fd, char *buffer, int req_len);
 int parsePacket(struct packet *req);
 void displayContents(struct packet *resp);
 int processResponse(int sock_fd, struct packet *resp);
@@ -39,7 +33,6 @@ int processResponse(int sock_fd, struct packet *resp);
  */
 void writeThread(int sock_fd)
 {
-	DEBUG("Inside write thread\n");
 	int sock_read, sock_write, sock_close;
 	struct packet resp;
 	int resp_len, ret;
@@ -76,34 +69,6 @@ void writeThread(int sock_fd)
 	exit(0);
 }
 
-/*
- * readRequest() - read client request repeatedly
- * sock_fd: slave socket file descriptor
- * buffer: starting point of request structure
- * req_len: length of request structure
- */
-int readResponse(int sock_fd, char *buffer, int resp_len)
-{
-	int sock_read;
-	/* Read each request stream repeatedly */
-	while (1)
-	{
-		sock_read = read(sock_fd, buffer, resp_len);
-		if (sock_read < 0)
-		{
-			strerror_r(errno, error, ERR_LEN);
-			printf("Error (read): %s\n", error);
-			return -1;
-		}
-		buffer += sock_read;
-		resp_len -= sock_read;
-		/* Break the loop when the request structure is read completely */
-		if (!sock_read || resp_len <= 0)
-			break;
-	}
-	cout<<sock_read<<" bytes read\n";
-	return sock_read;
-}
 
 /*
  * parsePacket() - parse the packet and validate all fields
@@ -112,8 +77,7 @@ int readResponse(int sock_fd, char *buffer, int resp_len)
  */
 int parsePacket(struct packet *resp)
 {
-	DEBUG("Parsing Packet\n");
-	DEBUG("%d | %s | %d | %u\n", resp->content_len, getCommand(resp->cmd_code), resp->req_num, resp->sessionId);
+
 	switch (resp->cmd_code)
 	{
 	case LOGIN:
