@@ -18,22 +18,18 @@ using namespace std;
 #define MAX_CONT_LEN 100
 
 enum commands {
-    LOGIN,
-    LOGOUT,
-    POST,
-    SHOW,
-    LIST
+	LOGIN, LOGOUT, POST, SHOW, LIST, NOTIFY, ACK
 };
 /*
-struct content {
-	char username[USR_NAME_LEN];
-	char password[PW_LEN];
-	char postee[POSTEE_LEN];
-	char post[POST_LEN];
-	char wallOwner[OWNER_LEN];
-	char rcvd_cnts[MAX_CONT_LEN];
-};
-*/
+ struct content {
+ char username[USR_NAME_LEN];
+ char password[PW_LEN];
+ char postee[POSTEE_LEN];
+ char post[POST_LEN];
+ char wallOwner[OWNER_LEN];
+ char rcvd_cnts[MAX_CONT_LEN];
+ };
+ */
 
 struct content {
 	string username;
@@ -50,13 +46,11 @@ struct content {
  */
 
 struct packet {
-    unsigned int content_len;
-    enum commands cmd_code;
-    unsigned int req_num;
-    unsigned int sessionId;
-    struct content contents;
+	unsigned int content_len;
+	enum commands cmd_code;
+	unsigned int req_num;
+	unsigned int sessionId;
+	struct content contents;
 };
-
-
 
 #endif /* STRUCTURES_H_ */

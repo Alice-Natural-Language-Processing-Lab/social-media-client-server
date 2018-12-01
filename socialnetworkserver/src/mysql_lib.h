@@ -24,6 +24,10 @@
 
 #include "structures.h"
 
+string wall_entry_format(string timestamp, string poster, string postee,
+		string content);
+//formats wall entry consistently across classes
+
 class MySQLDatabaseDriver {
 	/*
 	 * Call this once in the global space to initialize the MySQLDriver
@@ -35,19 +39,19 @@ public:
 	~MySQLDatabaseDriver();
 };
 
-class MySQLDatabaseInterface {
+class DatabaseCommandInterface {
 	/*
 	 * Call this in each client handler thread that needs to connect to the database.
 	 * It handles database connections only within a thread.
 	 */
 public:
-	int session_timeout = 15; // in minutes between 0 and 59
+	unsigned int session_timeout = 15; // in minutes between 0 and 59. Should be set the same across all threads
 	unsigned int session_id_max = UINT_MAX;
 
-	MySQLDatabaseInterface(MySQLDatabaseDriver* databaseDriver,
+	DatabaseCommandInterface(MySQLDatabaseDriver databaseDriver,
 			std::string server_url, std::string server_username,
 			std::string server_password, std::string server_database);
-	~MySQLDatabaseInterface();
+	~DatabaseCommandInterface();
 
 	void getResults(std::string query);
 	/*
@@ -169,45 +173,74 @@ private:
 	 */
 };
 
-class Notifications {
+class DatabaseNotificationInterface {
 	/*
 	 * The Notification object handles querying the database for notifications,
 	 * iterating through the notifications, generating a packet to send,
 	 * and updating the database if a notification is successfully sent to the client.
 	 *
-	 * It requires a MySQLDatabaseInteface to have been initialized and passed to it.
+	 * It requires a MySQLDatabaseDriver to have been initialized and passed to it.
 	 *
 	 * This object should only be used within the notifications thread
+	 *
+	 * Thread safety: Should only be used in one thread at a time
 	 */
 public:
-	Notifications(MySQLDatabaseInterface* dbInterface);
-	~Notifications();
+	int session_timeout = 15; // in minutes between 0 and 59. Should be set the same across all threads
+
+	DatabaseNotificationInterface(MySQLDatabaseDriver databaseDriver,
+			std::string server_url, std::string server_username,
+			std::string server_password, std::string server_database);
+	~DatabaseNotificationInterface();
 
 	int getNotifications(void);
 	/*
 	 * queries the database for notifications to process. Returns the number of notifications
 	 * to process.
+	 *
+	 * Returns:
+	 * 0 or positive int if successful
+	 * -2 if server error
 	 */
 
-	bool next(void);
+	int next(void);
 	/*
-	 * Iterates the Notification object to the next entry. Returns true if the entry exists.
+	 * Iterates the Notification object to the next entry. Returns the row number if the entry exists.
 	 * Starts on an empty "0th" entry so much be called once to get to the first entry.
+	 *
+	 * Returns:
+	 * row number if entry exists
+	 * -1 if no more entries
+	 * -2 if server error
 	 */
 
 	int sendNotification(struct packet& pkt);
 	/*
 	 * Generates the notification packet and returns the socket descriptor to send it to.
-	 * Returns -1 if fails.
+	 *
+	 * Returns:
+	 * socket descriptor if successful
+	 * -2 if server error
 	 */
 	int markRead(void);
 	/*
 	 * Marks the current notification as read (acknowledged by client code).
-	 * Returns 0 if successful.
+	 *
+	 * Returns:
+	 * row number of notification if successful.
+	 * -2 if server error
 	 */
 
 private:
-	MySQLDatabaseInterface* databaseInterface;
+	sql::Driver* driver;
+	sql::Connection* con;
+	sql::PreparedStatement* pstmt_get_notifications;
+	sql::ResultSet* res_get_notifications;
+	sql::PreparedStatement* pstmt_mark_read;
+	bool notifications_generated = false;
+	/* used for garbage collection of statements and result sets and to
+	 * ensure that functions aren't run on uncreated statements
+	 */
 };
 
 #endif /* MYSQL_LIB_H_ */

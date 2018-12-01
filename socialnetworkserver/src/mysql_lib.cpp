@@ -7,6 +7,13 @@
 
 #include "mysql_lib.h"
 
+string wall_entry_format(string timestamp, string poster, string postee,
+		string content) {
+
+	return timestamp + " - " + poster + " posted on " + postee + "'s wall\n"
+			+ content;
+}
+
 MySQLDatabaseDriver::MySQLDatabaseDriver() {
 
 	try {
@@ -24,12 +31,12 @@ MySQLDatabaseDriver::MySQLDatabaseDriver() {
 MySQLDatabaseDriver::~MySQLDatabaseDriver() {
 }
 
-MySQLDatabaseInterface::MySQLDatabaseInterface(
-		MySQLDatabaseDriver* databaseDriver, std::string server_url,
+DatabaseCommandInterface::DatabaseCommandInterface(
+		MySQLDatabaseDriver databaseDriver, std::string server_url,
 		std::string server_username, std::string server_password,
 		std::string server_database) {
 
-	driver = databaseDriver->driver;
+	driver = databaseDriver.driver;
 	try {
 		con = driver->connect(server_url, server_username, server_password);
 		con->setSchema(server_database);
@@ -43,12 +50,12 @@ MySQLDatabaseInterface::MySQLDatabaseInterface(
 	}
 }
 
-MySQLDatabaseInterface::~MySQLDatabaseInterface() {
+DatabaseCommandInterface::~DatabaseCommandInterface() {
 
 	delete con;
 }
 
-void MySQLDatabaseInterface::getResults(std::string query) {
+void DatabaseCommandInterface::getResults(std::string query) {
 
 	try {
 		stmt = con->createStatement();
@@ -68,7 +75,7 @@ void MySQLDatabaseInterface::getResults(std::string query) {
 	}
 }
 
-int MySQLDatabaseInterface::hasValidSession(struct packet& pkt,
+int DatabaseCommandInterface::hasValidSession(struct packet& pkt,
 		unsigned int* user_id, unsigned int* socket_descriptor) {
 
 	/*
@@ -80,11 +87,14 @@ int MySQLDatabaseInterface::hasValidSession(struct packet& pkt,
 	 */
 
 	try {
+		//This query only looks at sessions. This allows a single user to be logged into multiple sessions.
 		pstmt =
 				con->prepareStatement(
-						"SELECT * FROM (SELECT * FROM SocialNetwork.InteractionLog WHERE sessionID = ? ORDER BY TIMESTAMP DESC LIMIT 1) TEMP WHERE ADDTIME(TIMESTAMP, CONCAT('00:', ? ,':00')) > NOW() AND logout <> 1");
+						"SELECT * FROM (SELECT * FROM SocialNetwork.InteractionLog WHERE "
+								"sessionID = ? ORDER BY TIMESTAMP DESC LIMIT 1) TEMP WHERE "
+								"ADDTIME(TIMESTAMP, CONCAT('00:', ? ,':00')) > NOW() AND logout <> 1");
 		pstmt->setUInt(1, pkt.sessionId);
-		pstmt->setInt(2, session_timeout);
+		pstmt->setUInt(2, session_timeout);
 		res = pstmt->executeQuery();
 
 		//printResults();
@@ -134,7 +144,7 @@ int MySQLDatabaseInterface::hasValidSession(struct packet& pkt,
 	return -2;
 }
 
-int MySQLDatabaseInterface::login(struct packet &pkt,
+int DatabaseCommandInterface::login(struct packet &pkt,
 		unsigned int socket_descriptor) {
 
 	bool valid_session_id = false;
@@ -217,7 +227,7 @@ int MySQLDatabaseInterface::login(struct packet &pkt,
 	return -2;
 }
 
-int MySQLDatabaseInterface::listUsers(struct packet &pkt) {
+int DatabaseCommandInterface::listUsers(struct packet &pkt) {
 
 	std::string temp;
 	try {
@@ -271,7 +281,7 @@ int MySQLDatabaseInterface::listUsers(struct packet &pkt) {
 	return -2;
 }
 
-int MySQLDatabaseInterface::showWall(struct packet &pkt) {
+int DatabaseCommandInterface::showWall(struct packet &pkt) {
 
 	std::string temp;
 	try {
@@ -292,7 +302,10 @@ int MySQLDatabaseInterface::showWall(struct packet &pkt) {
 		//get requested user's wall
 		pstmt =
 				con->prepareStatement(
-						"select timestamp, content, userPostee.userName postee, userPoster.userName poster from Posts join Users userPostee on userPostee.userID = Posts.posteeUserID join Users userPoster on userPoster.userID = Posts.posterUserID where userPostee.userName = ? order by timestamp asc");
+						"select timestamp, content, userPostee.userName postee, userPoster.userName "
+								"poster from Posts join Users userPostee on userPostee.userID = Posts.posteeUserID "
+								"join Users userPoster on userPoster.userID = Posts.posterUserID "
+								"where userPostee.userName = ? order by timestamp asc");
 		pstmt->setString(1, pkt.contents.wallOwner);
 		res = pstmt->executeQuery();
 
@@ -304,10 +317,9 @@ int MySQLDatabaseInterface::showWall(struct packet &pkt) {
 		} else {
 			//generate wall contents
 			while (res->next()) {
-				temp += res->getString("timestamp") + " - "
-						+ res->getString("poster") + " posted on "
-						+ res->getString("postee") + "'s wall\n"
-						+ res->getString("content");
+				temp += wall_entry_format(res->getString("timestamp"),
+						res->getString("poster"), res->getString("postee"),
+						res->getString("content"));
 				if (!res->isLast()) {
 					temp += "\n\n";
 				}
@@ -342,7 +354,7 @@ int MySQLDatabaseInterface::showWall(struct packet &pkt) {
 	return -2;
 }
 
-int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
+int DatabaseCommandInterface::postOnWall(struct packet &pkt) {
 
 	unsigned int poster_id, post_id;
 	try {
@@ -358,7 +370,8 @@ int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
 
 		pstmt =
 				con->prepareStatement(
-						"insert into Posts (posterUserID, posteeUserID, content) select ?, postee.userID, ? from Users postee where postee.userName = ?");
+						"insert into Posts (posterUserID, posteeUserID, content) "
+								"select ?, postee.userID, ? from Users postee where postee.userName = ?");
 		pstmt->setUInt(1, poster_id);
 		pstmt->setString(2, pkt.contents.post);
 		pstmt->setString(3, pkt.contents.postee);
@@ -405,8 +418,7 @@ int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
 		delete pstmt;
 
 		insertInteractionLog(pkt.sessionId, false,
-				"POST " + pkt.contents.postee + " "
-						+ std::to_string(post_id));
+				"POST " + pkt.contents.postee + " " + std::to_string(post_id));
 
 		return 0;
 
@@ -426,7 +438,7 @@ int MySQLDatabaseInterface::postOnWall(struct packet &pkt) {
 	return -2;
 }
 
-int MySQLDatabaseInterface::logout(struct packet& pkt) {
+int DatabaseCommandInterface::logout(struct packet& pkt) {
 
 	unsigned int user_id;
 	std::string user_name;
@@ -476,7 +488,7 @@ int MySQLDatabaseInterface::logout(struct packet& pkt) {
 	return -2;
 }
 
-void MySQLDatabaseInterface::printResults() {
+void DatabaseCommandInterface::printResults() {
 
 	int column_count, initial_row = res->getRow();
 	res->beforeFirst();
@@ -496,7 +508,7 @@ void MySQLDatabaseInterface::printResults() {
 	res->absolute(initial_row);
 }
 
-int MySQLDatabaseInterface::insertInteractionLog(unsigned int session_id,
+int DatabaseCommandInterface::insertInteractionLog(unsigned int session_id,
 		bool logout, std::string command, unsigned int user_id,
 		unsigned int socket_descriptor) {
 
@@ -526,7 +538,8 @@ int MySQLDatabaseInterface::insertInteractionLog(unsigned int session_id,
 
 		pstmt =
 				con->prepareStatement(
-						"insert into InteractionLog (userID, sessionID, logout, socketDescriptor, command) values (?, ?, ?, ?, ?)");
+						"insert into InteractionLog (userID, sessionID, logout, socketDescriptor, command) "
+								"values (?, ?, ?, ?, ?)");
 		pstmt->setUInt(1, user_id);
 		pstmt->setUInt(2, session_id);
 		pstmt->setBoolean(3, logout);
@@ -556,7 +569,7 @@ int MySQLDatabaseInterface::insertInteractionLog(unsigned int session_id,
 	return -2;
 }
 
-int MySQLDatabaseInterface::getUserID(std::string user_name,
+int DatabaseCommandInterface::getUserID(std::string user_name,
 		unsigned int* user_id) {
 
 	try {
@@ -599,31 +612,171 @@ int MySQLDatabaseInterface::getUserID(std::string user_name,
 	return -2;
 }
 
-Notifications::Notifications(MySQLDatabaseInterface* dbInterface) {
+DatabaseNotificationInterface::DatabaseNotificationInterface(
+		MySQLDatabaseDriver databaseDriver, std::string server_url,
+		std::string server_username, std::string server_password,
+		std::string server_database) {
 
-	databaseInterface = dbInterface;
+	driver = databaseDriver.driver;
+	try {
+		con = driver->connect(server_url, server_username, server_password);
+		con->setSchema(server_database);
+	} catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+	}
 }
 
-Notifications::~Notifications() {
+DatabaseNotificationInterface::~DatabaseNotificationInterface() {
 
+	if (notifications_generated == true) {
+		//garbage collection
+		delete pstmt_get_notifications;
+		delete res_get_notifications;
+	}
+	delete con;
 }
 
-int Notifications::getNotifications(void) {
+int DatabaseNotificationInterface::getNotifications(void) {
 
-	return 0;
+	if (notifications_generated == true) {
+		//garbage collection
+		delete pstmt_get_notifications;
+		delete res_get_notifications;
+	} else {
+		notifications_generated = true;
+	}
+	try {
+		pstmt_get_notifications =
+				con->prepareStatement(
+						"select OnlineUsers.socketDescriptor, Notifications.notificationID, "
+								"Posts.content, Posts.timestamp, Poster.userName poster, Postee.userName postee "
+								"from (select IntLog2.userID, IntLog1.socketDescriptor from "
+								"(select userID, max(timestamp) maxTimestamp from InteractionLog group by userID) IntLog2 join "
+								"(select userID, timestamp, logout, socketDescriptor from InteractionLog) IntLog1 "
+								"on IntLog1.userID = IntLog2.userID "
+								"and IntLog1.timestamp = IntLog2.maxTimestamp "
+								"where logout <>1 "
+								"and ADDTIME(TIMESTAMP, CONCAT('00:', ? ,':00')) > NOW()) OnlineUsers "
+								"join Notifications on OnlineUsers.userID = Notifications.userID "
+								"join Posts on Posts.postID = Notifications.postID "
+								"join Users Poster on Poster.userID = Posts.posterUserID "
+								"join Users Postee on Postee.userID = Posts.posteeUserID "
+								"where Notifications.readFlag = 0");
+		pstmt_get_notifications->setUInt(1, session_timeout);
+		res_get_notifications = pstmt_get_notifications->executeQuery();
+
+		return res_get_notifications->rowsCount();
+
+	} catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+
+		return -2;
+	}
+
+	return -2;
 }
 
-bool Notifications::next(void) {
+int DatabaseNotificationInterface::next(void) {
 
-	return 0;
+	if (notifications_generated == false) {
+		//can't run function until notifications are generated
+		return -2;
+	}
+	try {
+		if (res_get_notifications->isLast()) {
+			//reached end of notifications
+			delete pstmt_get_notifications;
+			delete res_get_notifications;
+			notifications_generated = false;
+			return -1;
+		} else {
+			res_get_notifications->next();
+			return res_get_notifications->getRow();
+		}
+
+	} catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+
+		return -2;
+	}
+
+	return -2;
 }
 
-int Notifications::sendNotification(struct packet& pkt) {
+int DatabaseNotificationInterface::sendNotification(struct packet& pkt) {
 
-	return 0;
+	if (notifications_generated == false) {
+		//can't run function until notifications are generated
+		return -2;
+	}
+	try {
+		pkt.cmd_code = NOTIFY;
+		pkt.contents.rcvd_cnts = wall_entry_format(
+				res_get_notifications->getString("timestamp"),
+				res_get_notifications->getString("poster"),
+				res_get_notifications->getString("postee"),
+				res_get_notifications->getString("content"));
+		return res_get_notifications->getInt("socketDescriptor");
+
+	} catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+
+		return -2;
+	}
+
+	return -2;
 }
 
-int Notifications::markRead(void) {
+int DatabaseNotificationInterface::markRead(void) {
 
-	return 0;
+	if (notifications_generated == false) {
+		//can't run function until notifications are generated
+		return -2;
+	}
+	try {
+		pstmt_mark_read = con->prepareStatement("update Notifications "
+				"set readFlag = 1 "
+				"where notificationID = ?");
+		pstmt_mark_read->setUInt(1,
+				res_get_notifications->getUInt("notificationID"));
+		if (pstmt_mark_read->executeUpdate() != 1) {
+			delete pstmt_mark_read;
+			return -2;
+		}
+
+		delete pstmt_mark_read;
+		return res_get_notifications->getRow();
+
+	} catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__
+				<< std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+
+		return -2;
+	}
+
+	return -2;
 }
