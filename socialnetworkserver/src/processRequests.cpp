@@ -89,6 +89,7 @@ void listAllUsers(int sock_fd, struct packet &req)
 	if (ret == -2)
 	{
 		printf("Error (listUsers): DB listUsers error\nClosing Client Connection");
+		userLogout(sock_fd, req);
 		destroy_socket(sock_fd);
 		pthread_exit(NULL);
 		return;
@@ -139,6 +140,7 @@ void showWallMessage(int sock_fd, struct packet &req)
 	if (ret == -2)
 	{
 		printf("Error (showWall): DB show Wall error\nClosing Client Connection\n");
+		userLogout(sock_fd, req);
 		destroy_socket(sock_fd);
 		pthread_exit(NULL);
 		return;

@@ -191,12 +191,12 @@ int read_socket(int socketfd, struct packet &pkt) {
 	char errorMessage[ERR_LEN];
 	char *buffer = (char *)malloc(sizeof(char) * MAX_PACKET_LEN);
 	char *bufferHead = buffer;
-	int packetLength = MAX_PACKET_LEN;
+	int packetLength = 90;
 
 	// Read each request stream repeatedly
 	while (1 == 1)
 	{
-		byteRead = read(socketfd, buffer, packetLength);
+		byteRead = read(socketfd, buffer, packetLength-totalRead);
 		if (byteRead < 0)
 		{
 			fprintf(stderr, "Error (read): %s\n", strerror_r(errno, errorMessage, ERR_LEN));
