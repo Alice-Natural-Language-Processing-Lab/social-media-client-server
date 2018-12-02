@@ -8,8 +8,8 @@
 
 unsigned int packetSeqNum = 0;
 bool isServer = false;
-struct packet bufferPkt;
-bool bufferOccupied = false;
+int bufferOccupied = 0;
+struct packet bufferPkts[10];
 
 pthread_mutex_t seqNumlock;
 pthread_mutex_t bufferPktlock;
@@ -43,29 +43,19 @@ int create_server_socket(int portNum) {
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_addr.s_addr = INADDR_ANY;
 	serverAddr.sin_port = htons(portNum);
-
+	
 	if(bind(socketfd,(struct sockaddr *)&serverAddr , sizeof(serverAddr)) < 0) {
 		char errorMessage[ERR_LEN];
 		fprintf(stderr, "Failed to Bind; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
 		return -2;
 	}
 
-	/* Listen on the socket */
 	if(listen(socketfd, LISTEN_QUEUE_LENGTH) < 0) {
 		char errorMessage[ERR_LEN];
 		fprintf(stderr, "Failed to Listen; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
 		return -3;
 	}
-/*
-	struct timeval tv;
-	tv.tv_sec = TIMEOUT_SEC;
-	tv.tv_usec = 0;
-	if(setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
-		char errorMessage[ERR_LEN];
-		fprintf(stderr, "setsockopt(TIMEOUT) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
-		return errno;
-	}
-*/
+
 	return socketfd;
 }
 
@@ -119,17 +109,6 @@ int create_client_socket(string serverName, int portNum) {
 		fprintf(stderr, "setsockopt(SO_REUSEPORT) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
 		return -4;
 	}
-	
-/*
-	struct timeval tv;
-	tv.tv_sec = TIMEOUT_SEC;
-	tv.tv_usec = 0;
-	if(setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
-		char errorMessage[ERR_LEN];
-		fprintf(stderr, "setsockopt(TIMEOUT) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
-		return -5;
-	}
-*/
 
 	return socketfd;
 }
@@ -143,17 +122,6 @@ int accept_socket(int socketfd) {
 		fprintf(stderr, "Failed to Accept Socket; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
 		return -1;
 	}
-
-/*
-	struct timeval tv;
-	tv.tv_sec = TIMEOUT_SEC;
-	tv.tv_usec = 0;
-	if(setsockopt(slaveSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
-		char errorMessage[ERR_LEN];
-		fprintf(stderr, "setsockopt(TIMEOUT) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
-		return -2;
-	}
-*/
 
 	return slaveSocket;
 }
@@ -192,9 +160,8 @@ int write_socket_helper(int socketfd, struct packet &pkt) {
 	strcat(pktString, pkt.contents.rcvd_cnts.c_str());
 	//total is 12+10+9+11+10+10+8+6+11+11 = 98
 
-	//For Debug Purpose
+	//For Debug Purpose:
 	//printf("stirng: %s\nstringLength: %d\n", pktString, (int)strlen(pktString));
-
 	if(write(socketfd, pktString, strlen(pktString)) < 0) {
 		char errorMessage[ERR_LEN];
 		fprintf(stderr, "Error (read): %s\n", strerror_r(errno, errorMessage, ERR_LEN));
@@ -382,6 +349,7 @@ int write_socket(int socketfd, struct packet &pkt) {
 		pthread_mutex_unlock(&seqNumlock);
 	}
 
+	//calculate the correct contentLength
 	int contentLength = to_string(pkt.cmd_code).length() + to_string(pkt.req_num).length() + to_string(pkt.sessionId).length() + pkt.contents.username.length() + pkt.contents.password.length() + pkt.contents.postee.length() + pkt.contents.post.length() + pkt.contents.wallOwner.length() + pkt.contents.rcvd_cnts.length();
 	pkt.content_len = (unsigned int) contentLength;
 
@@ -395,31 +363,58 @@ int write_socket(int socketfd, struct packet &pkt) {
 	struct packet ackPkt;
 
 	pthread_mutex_lock(&bufferPktlock);
-	if(bufferOccupied) {
-		deepCopyPkt(ackPkt, bufferPkt);
-		bufferOccupied = false;
-	} else {
-		struct timeval tv;
-		tv.tv_sec = TIMEOUT_SEC;
-		tv.tv_usec = 0;
-		if(setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
-			char errorMessage[ERR_LEN];
-			fprintf(stderr, "setsockopt(TIMEOUT) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
-			return -5;
-		}
-
-		int readError = read_socket_helper(socketfd, ackPkt);
-		if(readError <= 0) {
-			fprintf(stderr, "Failed to Read ACK Packet\n");
-			return -2;
+	if(bufferOccupied > 0) {
+		for(int i = 0; i < bufferOccupied; i++) {
+			deepCopyPkt(ackPkt, bufferPkts[i]);
+			if(ackPkt.content_len != pkt.content_len || ackPkt.cmd_code != ACK || ackPkt.req_num != pkt.req_num || ackPkt.sessionId != pkt.sessionId) {
+				continue;
+			} else {
+				bufferOccupied--;
+				for(int j = i; j < bufferOccupied; j++) {
+					deepCopyPkt(bufferPkts[j], bufferPkts[j+1]);
+				}
+			}
 		}
 	}
+
+	Retry:
+	//set timeout, the read for ACK needs to timeout
+	struct timeval tv;
+	tv.tv_sec = TIMEOUT_SEC;
+	tv.tv_usec = 0;
+	if(setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
+		char errorMessage[ERR_LEN];
+		fprintf(stderr, "setsockopt(TIMEOUT) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
+		return -5;
+	}
+
+	int readError = read_socket_helper(socketfd, ackPkt);
+	if(readError <= 0) {
+		fprintf(stderr, "Failed to Read ACK Packet\n");
+		return -2;
+	}
+	if(ackPkt.cmd_code != ACK || ackPkt.req_num != pkt.req_num) {
+		if(bufferOccupied > 9) {
+			fprintf(stderr, "Buffer Queue Full\n");
+			return -4;
+		} else {
+			deepCopyPkt(bufferPkts[bufferOccupied], ackPkt);
+			bufferOccupied++;
+			goto Retry;
+		}
+	}
+
 	pthread_mutex_unlock(&bufferPktlock);
 
-	if(ackPkt.content_len != pkt.content_len || ackPkt.cmd_code != ACK || ackPkt.req_num != pkt.req_num || ackPkt.sessionId != pkt.sessionId) {
-		fprintf(stderr, "ACK Packet does not match\n");
+	if(ackPkt.sessionId != pkt.sessionId) {
+		fprintf(stderr, "ACK Packet belong to other session\n");
 		return -3;
 	}
+	if(ackPkt.content_len != pkt.content_len) {
+		fprintf(stderr, "ACK Packet does not match\n");
+		return -5;
+	}
+
 	pthread_mutex_lock(&logFilelock);
 	FILE * logFile;
 	logFile = fopen("log.txt","a");
@@ -433,7 +428,7 @@ int write_socket(int socketfd, struct packet &pkt) {
 }
 
 int read_socket(int socketfd, struct packet &pkt) {
-
+	//turn off timeout if any
 	struct timeval tv;
 	tv.tv_sec = 0;
 	tv.tv_usec = 0;
@@ -443,6 +438,23 @@ int read_socket(int socketfd, struct packet &pkt) {
 		return -5;
 	}
 
+	pthread_mutex_lock(&bufferPktlock);
+	if(bufferOccupied > 0) {
+		for(int i = 0; i < bufferOccupied; i++) {
+			deepCopyPkt(pkt, bufferPkts[i]);
+			if(pkt.cmd_code != ACK) {
+				bufferOccupied--;
+				for(int j = i; j < bufferOccupied; j++) {
+					deepCopyPkt(bufferPkts[j], bufferPkts[j+1]);
+				}
+				string contentLengthString = to_string(pkt.content_len);
+				int packetLength = 98 + contentLengthString.length() + stoi(contentLengthString);
+				return packetLength;
+			}
+		}
+	}
+	pthread_mutex_unlock(&bufferPktlock);
+
 	Retry:
 	int readError = read_socket_helper(socketfd, pkt);
 	if(readError <= 0)	//error in reading
@@ -450,9 +462,9 @@ int read_socket(int socketfd, struct packet &pkt) {
 
 	if(pkt.cmd_code == ACK) {
 		pthread_mutex_lock(&bufferPktlock);
-		if(!bufferOccupied) {
-				deepCopyPkt(bufferPkt, pkt);
-				bufferOccupied = true;
+		if(bufferOccupied < 10) {
+				deepCopyPkt(bufferPkts[bufferOccupied], pkt);
+				bufferOccupied++;
 				goto Retry;
 		} else {
 			fprintf(stderr, "Recieved a ACK Packet, buffer Packet Queue Full\n");
