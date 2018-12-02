@@ -183,7 +183,7 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	// Read each request stream repeatedly
 	while (1 == 1)
 	{
-		byteRead = read(socketfd, buffer, packetLength);
+		byteRead = read(socketfd, buffer, packetLength-totalRead);
 		if (byteRead < 0)
 		{
 			fprintf(stderr, "Error (read): %s\n", strerror_r(errno, errorMessage, ERR_LEN));
