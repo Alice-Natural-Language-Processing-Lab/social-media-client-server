@@ -213,12 +213,6 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	string pktString(bufferHead);
 	free(bufferHead);
 
-	//if(pktString.length() != packetLength) {
-	//	fprintf(stderr, "Packet Length Incorrect; Claimed length: %d, Actual Length: %d\n", packetLength, (int)pktString.length());
-	//	printf("%s\n",pktString.c_str());
-	//	return -2;
-	//}
-
 	startIndex = pktString.find("content_len:");	//first ':'
 	endIndex = pktString.find(",cmd_code:");		//first ','
 	if(startIndex == -1 || endIndex == -1) {
@@ -365,23 +359,28 @@ int write_socket(int socketfd, struct packet &pkt) {
 	
 	struct packet ackPkt;
 
+	Retry:
 	pthread_mutex_lock(&bufferPktlock);
+
+	//if there are buffer pkts, check each, see if the wanted ACK is in them
 	if(bufferOccupied > 0) {
 		for(int i = 0; i < bufferOccupied; i++) {
 			deepCopyPkt(ackPkt, bufferPkts[i]);
 			if(ackPkt.content_len != pkt.content_len || ackPkt.cmd_code != ACK || ackPkt.req_num != pkt.req_num || ackPkt.sessionId != pkt.sessionId) {
-				continue;
-			} else {
+				continue;	//not the wanted one
+			} else {	//got the wanted one
 				bufferOccupied--;
 				for(int j = i; j < bufferOccupied; j++) {
 					deepCopyPkt(bufferPkts[j], bufferPkts[j+1]);
 				}
 				doTCPRead = false;
+				string contentLengthString = to_string(pkt.content_len);
+				int packetLength = 98 + contentLengthString.length() + stoi(contentLengthString);
+				readError = packetLength;	//if get packet from buffer, change readError to packet length
 			}
 		}
 	}
 
-	Retry:
 	//set timeout, the read for ACK needs to timeout
 	struct timeval tv;
 	tv.tv_sec = TIMEOUT_SEC;
@@ -392,13 +391,19 @@ int write_socket(int socketfd, struct packet &pkt) {
 		return -5;
 	}
 	
-	if(doTCPRead)
+	if(doTCPRead) {
 		readError = read_socket_helper(socketfd, ackPkt);
+		if(readError <= 0) {
+			doTCPRead = false;
+			goto Retry;
+		}
+	}
 	if(readError <= 0) {
 		fprintf(stderr, "Failed to Read ACK Packet\n");
 		return -2;
 	}
-	if(ackPkt.cmd_code != ACK || ackPkt.req_num != pkt.req_num) {
+
+	if(ackPkt.cmd_code != ACK || ackPkt.req_num != pkt.req_num) {	//get unwanted packet, put it into buffer
 		if(bufferOccupied > 9) {
 			fprintf(stderr, "Buffer Queue Full\n");
 			return -4;
