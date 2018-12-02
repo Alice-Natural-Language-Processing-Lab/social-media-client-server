@@ -17,6 +17,7 @@
 #include "func_lib.h"
 #include "networking.h"
 
+extern const char * getCommand(int enumVal);
 extern unsigned int sessionID;
 
 using namespace std;
@@ -34,7 +35,7 @@ void writeThread(int sock_fd)
 {
 	int sock_read, sock_write, sock_close;
 	struct packet resp;
-	int ret;
+	int resp_len, ret;
 	/* Accept the response persistently*/
 	while(1)
 	{
@@ -63,7 +64,7 @@ void writeThread(int sock_fd)
 			return;
 		}
 	}
-	printf("Connection closed\nExiting Application\n\n");
+	printf("Connection closed\nExiting Application\n");
 	destroy_socket(sock_fd);
 	exit(0);
 }
@@ -106,7 +107,7 @@ int parsePacket(struct packet *resp)
 int processResponse(int sock_fd, struct packet *resp)
 {
 
-	if(resp->cmd_code == LIST || resp->cmd_code == SHOW || resp->cmd_code == NOTIFY)
+	if(resp->cmd_code == LIST || resp->cmd_code == SHOW || resp->cmd_code == POST || resp->cmd_code == NOTIFY || resp->cmd_code == LOGOUT)
 		displayContents(resp);
 	else if (resp->cmd_code == LOGIN)
 		if (!resp->contents.rcvd_cnts.length())
