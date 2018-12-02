@@ -211,7 +211,6 @@ int sendPacket(int sock_fd, enum commands cmd_code, string value1, string value2
     	return -1;
     }
     send_bytes = write_socket(sock_fd, req);
-    //send_bytes = write(sock_fd, &req, sizeof(req));
     if (send_bytes < 0)
     {
     	printf("Error (write_socket)\n");
