@@ -343,6 +343,7 @@ void deepCopyPkt(struct packet &destination, struct packet source) {
 
 int write_socket(int socketfd, struct packet &pkt) {
 	int readError = 0;
+	bool doTCPRead = true;
 
 	if((isServer && pkt.cmd_code == NOTIFY) || (!isServer && pkt.cmd_code != ACK && pkt.cmd_code != NOTIFY)) {	//if the packet is a new request, assign a req-num to it
 		pthread_mutex_lock(&seqNumlock);
@@ -375,7 +376,7 @@ int write_socket(int socketfd, struct packet &pkt) {
 				for(int j = i; j < bufferOccupied; j++) {
 					deepCopyPkt(bufferPkts[j], bufferPkts[j+1]);
 				}
-				goto Skip;
+				doTCPRead = false;
 			}
 		}
 	}
@@ -390,8 +391,9 @@ int write_socket(int socketfd, struct packet &pkt) {
 		fprintf(stderr, "setsockopt(TIMEOUT) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
 		return -5;
 	}
-
-	readError = read_socket_helper(socketfd, ackPkt);
+	
+	if(doTCPRead)
+		readError = read_socket_helper(socketfd, ackPkt);
 	if(readError <= 0) {
 		fprintf(stderr, "Failed to Read ACK Packet\n");
 		return -2;
