@@ -342,6 +342,8 @@ void deepCopyPkt(struct packet &destination, struct packet source) {
 }
 
 int write_socket(int socketfd, struct packet &pkt) {
+	int readError = 0;
+
 	if((isServer && pkt.cmd_code == NOTIFY) || (!isServer && pkt.cmd_code != ACK && pkt.cmd_code != NOTIFY)) {	//if the packet is a new request, assign a req-num to it
 		pthread_mutex_lock(&seqNumlock);
 		pkt.req_num = packetSeqNum;
@@ -373,6 +375,7 @@ int write_socket(int socketfd, struct packet &pkt) {
 				for(int j = i; j < bufferOccupied; j++) {
 					deepCopyPkt(bufferPkts[j], bufferPkts[j+1]);
 				}
+				goto Skip;
 			}
 		}
 	}
@@ -388,7 +391,7 @@ int write_socket(int socketfd, struct packet &pkt) {
 		return -5;
 	}
 
-	int readError = read_socket_helper(socketfd, ackPkt);
+	readError = read_socket_helper(socketfd, ackPkt);
 	if(readError <= 0) {
 		fprintf(stderr, "Failed to Read ACK Packet\n");
 		return -2;
@@ -415,6 +418,7 @@ int write_socket(int socketfd, struct packet &pkt) {
 		return -5;
 	}
 
+	Skip:
 	pthread_mutex_lock(&logFilelock);
 	FILE * logFile;
 	logFile = fopen("log.txt","a");
