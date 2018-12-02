@@ -13,6 +13,7 @@ bool bufferOccupied = false;
 
 pthread_mutex_t seqNumlock;
 pthread_mutex_t bufferPktlock;
+pthread_mutex_t logFilelock;
 
 int create_server_socket(int portNum) {
 	isServer = true;
@@ -199,7 +200,7 @@ int write_socket_helper(int socketfd, struct packet &pkt) {
 		fprintf(stderr, "Error (read): %s\n", strerror_r(errno, errorMessage, ERR_LEN));
 		return -1;
 	}
-	return 0;
+	return (int)strlen(pktString);
 }
 
 int read_socket_helper(int socketfd, struct packet &pkt) {
@@ -210,7 +211,7 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	char errorMessage[ERR_LEN];
 	char *buffer = (char *)malloc(sizeof(char) * MAX_PACKET_LEN);
 	char *bufferHead = buffer;
-	int packetLength = MAX_PACKET_LEN;
+	int packetLength = 90;
 
 	// Read each request stream repeatedly
 	while (1 == 1)
@@ -224,8 +225,7 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 		}
 		buffer += byteRead;
 		totalRead += byteRead;
-
-		//Break the loop when the request structure is read completely
+		//check actual length of the packet
 		string temp(bufferHead);
 		startIndex = temp.find("content_len:");
 		endIndex = temp.find(",cmd_code");
@@ -233,6 +233,7 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 			string contentLengthString = temp.substr(startIndex + 12, endIndex - startIndex - 12);
 			packetLength = 98 + contentLengthString.length() + stoi(contentLengthString);
 		}
+		//Break the loop when the request structure is read completely
 		if (byteRead == 0 || packetLength <= totalRead)
 			break;
 	}
@@ -376,10 +377,8 @@ void deepCopyPkt(struct packet &destination, struct packet source) {
 int write_socket(int socketfd, struct packet &pkt) {
 	if((isServer && pkt.cmd_code == NOTIFY) || (!isServer && pkt.cmd_code != ACK && pkt.cmd_code != NOTIFY)) {	//if the packet is a new request, assign a req-num to it
 		pthread_mutex_lock(&seqNumlock);
-
 		pkt.req_num = packetSeqNum;
 		packetSeqNum++;
-
 		pthread_mutex_unlock(&seqNumlock);
 	}
 
@@ -389,6 +388,9 @@ int write_socket(int socketfd, struct packet &pkt) {
 	int writeError = write_socket_helper(socketfd, pkt);
 	if(writeError < 0)
 		return writeError;
+
+	time_t sendTime;
+	sendTime = time(NULL);
 	
 	struct packet ackPkt;
 
@@ -413,12 +415,20 @@ int write_socket(int socketfd, struct packet &pkt) {
 		}
 	}
 	pthread_mutex_unlock(&bufferPktlock);
+
 	if(ackPkt.content_len != pkt.content_len || ackPkt.cmd_code != ACK || ackPkt.req_num != pkt.req_num || ackPkt.sessionId != pkt.sessionId) {
 		fprintf(stderr, "ACK Packet does not match\n");
 		return -3;
 	}
-
-
+	pthread_mutex_lock(&logFilelock);
+	FILE * logFile;
+	logFile = fopen("log.txt","a");
+	time_t timeStamp;
+	timeStamp = time(NULL);
+	fprintf(logFile, "Write %d byte at %s", writeError, asctime(localtime(&sendTime)));
+	fprintf(logFile, "Recieved ACK packet at %sResponse time: %lf ms\n\n", asctime(localtime(&timeStamp)), difftime(timeStamp, sendTime)*1000);
+	fclose(logFile);
+	pthread_mutex_unlock(&logFilelock);
 	return 0;
 }
 
@@ -452,25 +462,24 @@ int read_socket(int socketfd, struct packet &pkt) {
 	}
 
 	struct packet ackPkt;
-	ackPkt.content_len = pkt.content_len;
+	deepCopyPkt(ackPkt, pkt);
 	ackPkt.cmd_code = ACK;
-	ackPkt.req_num = pkt.req_num;
-    ackPkt.sessionId = pkt.sessionId;
-    ackPkt.contents.username = pkt.contents.username;
-	ackPkt.contents.password = pkt.contents.password;
-	ackPkt.contents.postee = pkt.contents.postee;
-	ackPkt.contents.post = pkt.contents.post;
-	ackPkt.contents.wallOwner = pkt.contents.wallOwner;
-	ackPkt.contents.rcvd_cnts = pkt.contents.rcvd_cnts;
 
 	int writeError = write_socket_helper(socketfd, ackPkt);
-	if(writeError == 0)
+	if(writeError > 0) {
+		pthread_mutex_lock(&logFilelock);
+		FILE * logFile;
+		logFile = fopen("log.txt","a");
+    		time_t timeStamp;
+    		timeStamp = time(NULL);
+    		fprintf(logFile, "Read %d byte at %s\n", readError, asctime(localtime(&timeStamp)));
+		fclose(logFile);
+		pthread_mutex_unlock(&logFilelock);
 		return readError;
-	else {
+	} else {
 		fprintf(stderr, "Failed to Send ACK Packet\n");
 		return -3;
 	}
-
 
 	return 0;
 }
