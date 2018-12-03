@@ -182,7 +182,8 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	int packetLength = 90;
 
 	// Read each request stream repeatedly
-	pthread_mutex_lock(&tcpReadlock);
+	if(!isServer)
+		pthread_mutex_lock(&tcpReadlock);
 	while (1 == 1)
 	{
 		byteRead = read(socketfd, buffer, packetLength-totalRead);
@@ -193,7 +194,8 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 		{
 			fprintf(stderr, "Error (read): %s\n", strerror_r(errno, errorMessage, ERR_LEN));
 			free(bufferHead);
-			pthread_mutex_unlock(&tcpReadlock);
+			if(!isServer)
+				pthread_mutex_unlock(&tcpReadlock);
 			return -2;
 		}
 		buffer += byteRead;
@@ -210,7 +212,8 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 		if (byteRead == 0 || packetLength <= totalRead)
 			break;
 	}
-	pthread_mutex_unlock(&tcpReadlock);
+	if(!isServer)
+		pthread_mutex_unlock(&tcpReadlock);
 	if(bufferHead == NULL || totalRead == 0) {
 		//fprintf(stderr, "Packet Read is NULL\n");
 		free(bufferHead);
@@ -223,7 +226,7 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	startIndex = pktString.find("content_len:");	//first ':'
 	endIndex = pktString.find(",cmd_code:");		//first ','
 	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packer Format Wrong1\n");
+		fprintf(stderr, "Packet Format Wrong1\n");
 		return -1;
 	}
 	string component = pktString.substr(startIndex + 12, endIndex - startIndex - 12);
@@ -234,7 +237,7 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	startIndex = pktString.find(",cmd_code:", endIndex);	//next component start
 	endIndex = pktString.find(",req_num:", startIndex);	//next component end
 	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packer Format Wrong2\n");
+		fprintf(stderr, "Packet Format Wrong2\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
@@ -244,7 +247,7 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	startIndex = pktString.find(",req_num:", endIndex);
 	endIndex = pktString.find(",sessionId:", startIndex);
 	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packer Format Wrong3\n");
+		fprintf(stderr, "Packet Format Wrong3\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 9, endIndex - startIndex - 9);
@@ -254,7 +257,7 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	startIndex = pktString.find(",sessionId:", endIndex);
 	endIndex = pktString.find(",username:", startIndex);
 	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packer Format Wrong4\n");
+		fprintf(stderr, "Packet Format Wrong4\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 11, endIndex - startIndex - 11);
@@ -264,7 +267,7 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	startIndex = pktString.find(",username:", endIndex);
 	endIndex = pktString.find(",password:", startIndex);
 	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packer Format Wrong5\n");
+		fprintf(stderr, "Packet Format Wrong5\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
@@ -275,7 +278,7 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	startIndex = pktString.find(",password:", endIndex);
 	endIndex = pktString.find(",postee:", startIndex);
 	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packer Format Wrong6\n");
+		fprintf(stderr, "Packet Format Wrong6\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
@@ -286,7 +289,7 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	startIndex = pktString.find(",postee:", endIndex);
 	endIndex = pktString.find(",post:", startIndex);
 	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packer Format Wrong7\n");
+		fprintf(stderr, "Packet Format Wrong7\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 8, endIndex - startIndex - 8);
@@ -297,7 +300,7 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	startIndex = pktString.find(",post:", endIndex);
 	endIndex = pktString.find(",wallOwner:", startIndex);
 	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packer Format Wrong8\n");
+		fprintf(stderr, "Packet Format Wrong8\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 6, endIndex - startIndex - 6);
@@ -308,7 +311,7 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	startIndex = pktString.find(",wallOwner:", endIndex);
 	endIndex = pktString.find(",rcvd_cnts:", startIndex);
 	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packer Format Wrong9\n");
+		fprintf(stderr, "Packet Format Wrong9\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 11, endIndex - startIndex - 11);
@@ -318,7 +321,7 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 
 	startIndex = pktString.find(",rcvd_cnts:", endIndex);
 	if(startIndex == -1) {
-		fprintf(stderr, "Packer Format Wrong10\n");
+		fprintf(stderr, "Packet Format Wrong10\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 11, packetLength - startIndex - 11);
