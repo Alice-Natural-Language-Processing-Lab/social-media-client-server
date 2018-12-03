@@ -14,7 +14,7 @@ extern MySQLDatabaseDriver databaseDriver;
 
 #define SERVER_URL "tcp://127.0.0.1:3306"
 #define SERVER_USERNAME "root"
-#define SERVER_PASSWORD "asdfgh"
+#define SERVER_PASSWORD "socialnetworkpswd"
 #define SERVER_DATABASE "SocialNetwork"
 #define DEBUG
 int notify_variable;
