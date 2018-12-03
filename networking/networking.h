@@ -20,7 +20,7 @@
 #include <pthread.h>
 #include <time.h>
 
-#define TIMEOUT_SEC 0
+#define TIMEOUT_SEC 5
 #define LISTEN_QUEUE_LENGTH 15
 #define MAX_PACKET_LEN 4096
 #define ERR_LEN 256

@@ -389,17 +389,16 @@ int write_socket(int socketfd, struct packet &pkt) {
 	fprintf(stderr, "bufferoccupied after buffer change:%i\n", bufferOccupied);
 	pthread_mutex_unlock(&bufferPktlock);
 
-	//set timeout, the read for ACK needs to timeout
-	struct timeval tv;
-	tv.tv_sec = TIMEOUT_SEC;
-	tv.tv_usec = 0;
-	if(setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
-		char errorMessage[ERR_LEN];
-		fprintf(stderr, "setsockopt(TIMEOUT) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
-		return -5;
-	}
-	
 	if(doTCPRead) {
+		//set timeout, the read for ACK needs to timeout
+		struct timeval tv;
+		tv.tv_sec = TIMEOUT_SEC;
+		tv.tv_usec = 0;
+		if(setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
+			char errorMessage[ERR_LEN];
+			fprintf(stderr, "setsockopt(TIMEOUT) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
+			return -5;
+		}
 		readError = read_socket_helper(socketfd, ackPkt);
 		if(readError <= 0) {
 			doTCPRead = false;
@@ -460,6 +459,7 @@ int read_socket(int socketfd, struct packet &pkt) {
 		return -5;
 	}
 
+	fprintf(stderr, "bufferoccupied before buffer change:%i\n", bufferOccupied);
 	pthread_mutex_lock(&bufferPktlock);
 	if(bufferOccupied > 0) {
 		for(int i = 0; i < bufferOccupied; i++) {
@@ -477,6 +477,7 @@ int read_socket(int socketfd, struct packet &pkt) {
 		}
 	}
 	pthread_mutex_unlock(&bufferPktlock);
+	fprintf(stderr, "bufferoccupied after buffer change:%i\n", bufferOccupied);
 
 	Retry:
 	int readError = read_socket_helper(socketfd, pkt);
