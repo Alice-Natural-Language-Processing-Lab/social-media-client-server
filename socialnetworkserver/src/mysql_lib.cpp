@@ -10,8 +10,7 @@
 string wall_entry_format(string timestamp, string poster, string postee,
 		string content) {
 
-	return timestamp + " - " + poster + " posted on " + postee + "'s wall\n"
-			+ content;
+	return poster + " to " + postee + "[" + timestamp + "]: " + content + "\n";
 }
 
 MySQLDatabaseDriver::MySQLDatabaseDriver() {
