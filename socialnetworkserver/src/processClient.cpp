@@ -31,6 +31,8 @@ void handleClient(int sock_fd)
 		sock_read = read_socket(sock_fd, req);
 		if(sock_read < 0)
 		{
+			if (sock_read == -9)
+				continue;
 			printf("Error(read_socket)\n");
 			break;
 		}
