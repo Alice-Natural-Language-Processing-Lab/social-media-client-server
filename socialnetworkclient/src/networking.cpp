@@ -16,6 +16,11 @@ pthread_mutex_t bufferPktlock;
 pthread_mutex_t logFilelock;
 pthread_mutex_t tcpReadlock;
 
+const char * getCommand(int enumVal)
+{
+  return commandList[enumVal];
+}
+
 int create_server_socket(int portNum) {
 	isServer = true;
 	int socketfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -470,7 +475,7 @@ int write_socket(int socketfd, struct packet &pkt) {
 	logFile = fopen("log.txt","a");
 	time_t timeStamp;
 	timeStamp = time(NULL);
-	fprintf(logFile, "Write %d byte at %s", writeError, asctime(localtime(&sendTime)));
+	fprintf(logFile, "Write %d byte at %s\tPacket Type: %s\n", writeError, asctime(localtime(&sendTime)), getCommand(pkt.cmd_code));
 	fprintf(logFile, "Recieved ACK packet at %sResponse time: %lf ms\n\n", asctime(localtime(&timeStamp)), difftime(timeStamp, sendTime)*1000);
 	fclose(logFile);
 	pthread_mutex_unlock(&logFilelock);
@@ -538,7 +543,7 @@ int read_socket(int socketfd, struct packet &pkt) {
 		logFile = fopen("log.txt","a");
     		time_t timeStamp;
     		timeStamp = time(NULL);
-    		fprintf(logFile, "Read %d byte at %s\n", readError, asctime(localtime(&timeStamp)));
+    		fprintf(logFile, "Read %d byte at %s\tPacket Type: %s\n\n", readError, asctime(localtime(&timeStamp)), getCommand(pkt.cmd_code));
 		fclose(logFile);
 		pthread_mutex_unlock(&logFilelock);
 		return readError;
