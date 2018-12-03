@@ -27,16 +27,6 @@ enum commands {
 	ACK
 };
 
-/*
-struct content {
-	char username[USR_NAME_LEN];
-	char password[PW_LEN];
-	char postee[POSTEE_LEN];
-	char post[POST_LEN];
-	char wallOwner[OWNER_LEN];
-	char rvcd_cnts[MAX_CONT_LEN];
-};*/
-
 struct content {
 	std::string username;
 	std::string password;
