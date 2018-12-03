@@ -14,6 +14,7 @@ struct packet bufferPkts[10];
 pthread_mutex_t seqNumlock;
 pthread_mutex_t bufferPktlock;
 pthread_mutex_t logFilelock;
+pthread_mutex_t tcpReadlock;
 
 int create_server_socket(int portNum) {
 	isServer = true;
@@ -43,7 +44,7 @@ int create_server_socket(int portNum) {
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_addr.s_addr = INADDR_ANY;
 	serverAddr.sin_port = htons(portNum);
-	
+
 	if(bind(socketfd,(struct sockaddr *)&serverAddr , sizeof(serverAddr)) < 0) {
 		char errorMessage[ERR_LEN];
 		fprintf(stderr, "Failed to Bind; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
@@ -181,16 +182,18 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	int packetLength = 90;
 
 	// Read each request stream repeatedly
+	pthread_mutex_lock(&tcpReadlock);
 	while (1 == 1)
 	{
 		byteRead = read(socketfd, buffer, packetLength-totalRead);
 		//debugging
-		fprintf(stderr, "tcpread buffer:%.*s\n", byteRead, buffer);
+		fprintf(stderr, "thread %lu: tcpread buffer:%.*s\n", pthread_self(), byteRead, buffer);
 		//debugging
 		if (byteRead < 0)
 		{
 			fprintf(stderr, "Error (read): %s\n", strerror_r(errno, errorMessage, ERR_LEN));
 			free(bufferHead);
+			pthread_mutex_unlock(&tcpReadlock);
 			return -2;
 		}
 		buffer += byteRead;
@@ -207,6 +210,7 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 		if (byteRead == 0 || packetLength <= totalRead)
 			break;
 	}
+	pthread_mutex_unlock(&tcpReadlock);
 	if(bufferHead == NULL || totalRead == 0) {
 		//fprintf(stderr, "Packet Read is NULL\n");
 		free(bufferHead);
@@ -266,6 +270,8 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
 	if (component.length() > 0)
 		pkt.contents.username = component;
+	else
+		pkt.contents.username = "";
 	//printf("username:%s\n", pkt.contents.username.c_str());
 
 	startIndex = pktString.find(",password:", endIndex);
@@ -277,6 +283,8 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
 	if (component.length() > 0)
 		pkt.contents.password = component;
+	else
+		pkt.contents.password = "";
 	//printf("password:%s\n", pkt.contents.password.c_str());
 
 	startIndex = pktString.find(",postee:", endIndex);
@@ -288,6 +296,8 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 8, endIndex - startIndex - 8);
 	if (component.length() > 0)
 		pkt.contents.postee = component;
+	else
+		pkt.contents.postee = "";
 	//printf("postee:%s\n", pkt.contents.postee.c_str());
 
 	startIndex = pktString.find(",post:", endIndex);
@@ -299,6 +309,8 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 6, endIndex - startIndex - 6);
 	if (component.length() > 0)
 		pkt.contents.post = component;
+	else
+		pkt.contents.post = "";
 	//printf("post:%s\n", pkt.contents.post.c_str());
 
 	startIndex = pktString.find(",wallOwner:", endIndex);
@@ -310,6 +322,8 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 11, endIndex - startIndex - 11);
 	if (component.length() > 0)
 		pkt.contents.wallOwner = component;
+	else
+		pkt.contents.wallOwner = "";
 	//printf("wallOwner:%s\n", pkt.contents.wallOwner.c_str());
 
 	startIndex = pktString.find(",rcvd_cnts:", endIndex);
@@ -320,8 +334,10 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 11, packetLength - startIndex - 11);
 	if (component.length() > 0)
 		pkt.contents.rcvd_cnts = component;
+	else
+		pkt.contents.rcvd_cnts = "";
 	//printf("rcvd_cnts:%s\n", pkt.contents.rcvd_cnts.c_str());
-	
+
 	return totalRead;
 }
 
@@ -359,7 +375,7 @@ int write_socket(int socketfd, struct packet &pkt) {
 
 	time_t sendTime;
 	sendTime = time(NULL);
-	
+
 	struct packet ackPkt;
 
 
