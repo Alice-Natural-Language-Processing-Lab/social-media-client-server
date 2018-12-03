@@ -82,6 +82,8 @@ int parsePacket(struct packet *resp)
 	{
 	case LOGIN:
 		break;
+	case LOGOUT:
+		break;
 	case POST:
 		break;
 	case LIST:
