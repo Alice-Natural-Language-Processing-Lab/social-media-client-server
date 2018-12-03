@@ -339,16 +339,28 @@ void deepCopyPkt(struct packet &destination, struct packet &source) {
     destination.sessionId = source.sessionId;
     if(source.contents.username.length() > 0)
     	destination.contents.username = source.contents.username;
+	else 
+		destination.contents.username = "";
     if(source.contents.password.length() > 0)
     	destination.contents.password = source.contents.password;
+	else 
+		destination.contents.password = "";
     if(source.contents.postee.length() > 0)
     	destination.contents.postee = source.contents.postee;
+	else 
+		destination.contents.postee = "";
     if(source.contents.post.length() > 0)
     	destination.contents.post = source.contents.post;
+	else 
+		destination.contents.post = "";
     if(source.contents.wallOwner.length() > 0)
     	destination.contents.wallOwner = source.contents.wallOwner;
+	else 
+		destination.contents.wallOwner = "";
     if(source.contents.rcvd_cnts.length() > 0)
     	destination.contents.rcvd_cnts = source.contents.rcvd_cnts;
+	else 
+		destination.contents.rcvd_cnts = "";
 }
 
 int write_socket(int socketfd, struct packet &pkt) {
