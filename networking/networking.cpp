@@ -165,7 +165,7 @@ int write_socket_helper(int socketfd, struct packet &pkt) {
 	//printf("stirng: %s\nstringLength: %d\n", pktString, (int)strlen(pktString));
 	if(write(socketfd, pktString, strlen(pktString)) < 0) {
 		char errorMessage[ERR_LEN];
-		fprintf(stderr, "Error (read): %s\n", strerror_r(errno, errorMessage, ERR_LEN));
+		fprintf(stderr, "Error (write): %s\n", strerror_r(errno, errorMessage, ERR_LEN));
 		return -1;
 	}
 	return (int)strlen(pktString);
@@ -182,20 +182,20 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	int packetLength = 90;
 
 	// Read each request stream repeatedly
-	if(!isServer)
-		pthread_mutex_lock(&tcpReadlock);
+	//if(!isServer)
+	//	pthread_mutex_lock(&tcpReadlock);
 	while (1 == 1)
 	{
 		byteRead = read(socketfd, buffer, packetLength-totalRead);
 		//debugging
-		fprintf(stderr, "thread %lu: tcpread buffer:%.*s\n", pthread_self(), byteRead, buffer);
+		//fprintf(stderr, "thread %lu: tcpread buffer:%.*s\n", pthread_self(), byteRead, buffer);
 		//debugging
 		if (byteRead < 0)
 		{
-			fprintf(stderr, "Error (read): %s\n", strerror_r(errno, errorMessage, ERR_LEN));
+			//fprintf(stderr, "Error (read): %s\n", strerror_r(errno, errorMessage, ERR_LEN));
 			free(bufferHead);
-			if(!isServer)
-				pthread_mutex_unlock(&tcpReadlock);
+			//if(!isServer)
+			//	pthread_mutex_unlock(&tcpReadlock);
 			return -2;
 		}
 		buffer += byteRead;
@@ -212,8 +212,8 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 		if (byteRead == 0 || packetLength <= totalRead)
 			break;
 	}
-	if(!isServer)
-		pthread_mutex_unlock(&tcpReadlock);
+	//if(!isServer)
+	//	pthread_mutex_unlock(&tcpReadlock);
 	if(bufferHead == NULL || totalRead == 0) {
 		//fprintf(stderr, "Packet Read is NULL\n");
 		free(bufferHead);
@@ -339,28 +339,28 @@ void deepCopyPkt(struct packet &destination, struct packet &source) {
     destination.sessionId = source.sessionId;
     if(source.contents.username.length() > 0)
     	destination.contents.username = source.contents.username;
-	else 
-		destination.contents.username = "";
+	else
+		destination.contents.username = string();
     if(source.contents.password.length() > 0)
     	destination.contents.password = source.contents.password;
-	else 
-		destination.contents.password = "";
+	else
+		destination.contents.password = string();
     if(source.contents.postee.length() > 0)
     	destination.contents.postee = source.contents.postee;
-	else 
-		destination.contents.postee = "";
+	else
+		destination.contents.postee = string();
     if(source.contents.post.length() > 0)
     	destination.contents.post = source.contents.post;
-	else 
-		destination.contents.post = "";
+	else
+		destination.contents.post = string();
     if(source.contents.wallOwner.length() > 0)
     	destination.contents.wallOwner = source.contents.wallOwner;
-	else 
-		destination.contents.wallOwner = "";
+	else
+		destination.contents.wallOwner = string();
     if(source.contents.rcvd_cnts.length() > 0)
     	destination.contents.rcvd_cnts = source.contents.rcvd_cnts;
-	else 
-		destination.contents.rcvd_cnts = "";
+	else
+		destination.contents.rcvd_cnts = string();
 }
 
 int write_socket(int socketfd, struct packet &pkt) {
@@ -392,7 +392,7 @@ int write_socket(int socketfd, struct packet &pkt) {
 	pthread_mutex_lock(&bufferPktlock);
 	//if there are buffer pkts, check each, see if the wanted ACK is in them
 	//debugging
-	fprintf(stderr, "bufferoccupied before buffer change:%i\n", bufferOccupied);
+	//fprintf(stderr, "bufferoccupied before buffer change:%i\n", bufferOccupied);
 	//debugging
 	if(bufferOccupied > 0) {
 		for(int i = 0; i < bufferOccupied; i++) {
@@ -411,7 +411,7 @@ int write_socket(int socketfd, struct packet &pkt) {
 			}
 		}
 	}
-	fprintf(stderr, "bufferoccupied after buffer change:%i\n", bufferOccupied);
+	//fprintf(stderr, "bufferoccupied after buffer change:%i\n", bufferOccupied);
 	pthread_mutex_unlock(&bufferPktlock);
 
 	if(doTCPRead) {
@@ -484,7 +484,7 @@ int read_socket(int socketfd, struct packet &pkt) {
 		return -5;
 	}
 
-	fprintf(stderr, "bufferoccupied before buffer change:%i\n", bufferOccupied);
+	//fprintf(stderr, "bufferoccupied before buffer change:%i\n", bufferOccupied);
 	pthread_mutex_lock(&bufferPktlock);
 	if(bufferOccupied > 0) {
 		for(int i = 0; i < bufferOccupied; i++) {
@@ -502,7 +502,7 @@ int read_socket(int socketfd, struct packet &pkt) {
 		}
 	}
 	pthread_mutex_unlock(&bufferPktlock);
-	fprintf(stderr, "bufferoccupied after buffer change:%i\n", bufferOccupied);
+	//fprintf(stderr, "bufferoccupied after buffer change:%i\n", bufferOccupied);
 
 	Retry:
 	int readError = read_socket_helper(socketfd, pkt);
