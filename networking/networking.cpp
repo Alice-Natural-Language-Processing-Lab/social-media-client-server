@@ -210,6 +210,8 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 		return 0;
 	}
 
+	buffer++;
+	*buffer = '\0';s
 	string pktString(bufferHead);
 	free(bufferHead);
 
@@ -359,9 +361,8 @@ int write_socket(int socketfd, struct packet &pkt) {
 	
 	struct packet ackPkt;
 
-	Retry:
 	pthread_mutex_lock(&bufferPktlock);
-
+	Retry:
 	//if there are buffer pkts, check each, see if the wanted ACK is in them
 	if(bufferOccupied > 0) {
 		for(int i = 0; i < bufferOccupied; i++) {
@@ -377,35 +378,38 @@ int write_socket(int socketfd, struct packet &pkt) {
 				string contentLengthString = to_string(pkt.content_len);
 				int packetLength = 98 + contentLengthString.length() + stoi(contentLengthString);
 				readError = packetLength;	//if get packet from buffer, change readError to packet length
+				break;
 			}
 		}
 	}
-
 	//set timeout, the read for ACK needs to timeout
-	struct timeval tv;
-	tv.tv_sec = TIMEOUT_SEC;
-	tv.tv_usec = 0;
-	if(setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
-		char errorMessage[ERR_LEN];
-		fprintf(stderr, "setsockopt(TIMEOUT) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
-		return -5;
-	}
-	
 	if(doTCPRead) {
+		struct timeval tv;
+		tv.tv_sec = TIMEOUT_SEC;
+		tv.tv_usec = 0;
+		if(setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
+			char errorMessage[ERR_LEN];
+			fprintf(stderr, "setsockopt(TIMEOUT) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
+			pthread_mutex_unlock(&bufferPktlock);
+			return -5;
+		}
 		readError = read_socket_helper(socketfd, ackPkt);
 		if(readError <= 0) {
 			doTCPRead = false;
 			goto Retry;
 		}
 	}
+
 	if(readError <= 0) {
 		fprintf(stderr, "Failed to Read ACK Packet\n");
+		pthread_mutex_unlock(&bufferPktlock);
 		return -2;
 	}
 
 	if(ackPkt.cmd_code != ACK || ackPkt.req_num != pkt.req_num) {	//get unwanted packet, put it into buffer
 		if(bufferOccupied > 9) {
 			fprintf(stderr, "Buffer Queue Full\n");
+			pthread_mutex_unlock(&bufferPktlock);
 			return -4;
 		} else {
 			deepCopyPkt(bufferPkts[bufferOccupied], ackPkt);
