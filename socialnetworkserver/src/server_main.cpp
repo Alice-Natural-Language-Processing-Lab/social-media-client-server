@@ -1,9 +1,3 @@
-/*
- * main.cpp
- *
- *  Created on: Oct 17, 2018
- *      Author: pournami
- */
 #include <stdio.h>
 #include <string>
 #include <iostream>

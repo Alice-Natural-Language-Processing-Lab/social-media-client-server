@@ -1,9 +1,3 @@
-/*
- * processNotifications.cpp
- *
- *  Created on: Nov 18, 2018
- *      Author: pournami
- */
 #include <pthread.h>
 #include "func_lib.h"
 #include  "mysql_lib.h"
@@ -16,12 +10,10 @@ extern MySQLDatabaseDriver databaseDriver;
 #define SERVER_USERNAME "root"
 #define SERVER_PASSWORD "socialnetworkpswd"
 #define SERVER_DATABASE "SocialNetwork"
-#define DEBUG
 int notify_variable;
 
 void processNotification()
 {
-	DEBUG("Notification Thread created\n");
 	int sock_fd, read, sock_write;
 	int ret = 0;
 	DatabaseNotificationInterface notify(databaseDriver, SERVER_URL, SERVER_USERNAME,
@@ -46,7 +38,6 @@ void processNotification()
 		{
 			struct packet notifyPkt;
 			sock_fd = notify.sendNotification(notifyPkt);
-			DEBUG("Sock fd = %d\n", sock_fd);
 			if (sock_fd < 0)
 			{
 				printf("Error (sendNotification): Notification sending failed\n");

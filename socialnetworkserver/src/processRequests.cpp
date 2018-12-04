@@ -1,9 +1,3 @@
-/*
- * processRequests.cpp
- *
- *  Created on: Oct 22, 2018
- *      Author: pournami
- */
 #include "func_lib.h"
 #include "structures.h"
 #include  "mysql_lib.h"

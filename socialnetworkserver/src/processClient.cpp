@@ -1,9 +1,3 @@
-/*
- * processClient.cpp
- *
- *  Created on: Oct 17, 2018
- *      Author: pournami
- */
 #include <time.h>
 #include "func_lib.h"
 #include "mysql_lib.h"

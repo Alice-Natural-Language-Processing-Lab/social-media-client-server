@@ -1,10 +1,3 @@
-/*
- * structures.h
- *
- *  Created on: Oct 24, 2018
- *      Author: pournami
- */
-
 #ifndef STRUCTURES_H_
 #define STRUCTURES_H_
 

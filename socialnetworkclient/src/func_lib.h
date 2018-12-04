@@ -1,5 +1,3 @@
-
-
 #ifndef FUNC_LIB_H_
 #define FUNC_LIB_H_
 

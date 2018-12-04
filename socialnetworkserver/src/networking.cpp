@@ -1,9 +1,3 @@
-/*
- * networking.cpp
- *
- *  Created on: Nov 8, 2018
- *      Author: pan
- */
 #include "networking.h"
 
 unsigned int packetSeqNum = 0;
@@ -14,7 +8,6 @@ struct packet bufferPkts[10];
 pthread_mutex_t seqNumlock;
 pthread_mutex_t bufferPktlock;
 pthread_mutex_t logFilelock;
-pthread_mutex_t tcpReadlock;
 
 const char * getCommand(int enumVal)
 {
@@ -166,8 +159,6 @@ int write_socket_helper(int socketfd, struct packet &pkt) {
 	strcat(pktString, pkt.contents.rcvd_cnts.c_str());
 	//total is 12+10+9+11+10+10+8+6+11+11 = 98
 
-	//For Debug Purpose:
-	//printf("stirng: %s\nstringLength: %d\n", pktString, (int)strlen(pktString));
 	if(write(socketfd, pktString, strlen(pktString)) < 0) {
 		char errorMessage[ERR_LEN];
 		fprintf(stderr, "Error (write): %s\n", strerror_r(errno, errorMessage, ERR_LEN));
@@ -187,22 +178,15 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	int packetLength = 90;
 
 	// Read each request stream repeatedly
-	//if(!isServer)
-	//	pthread_mutex_lock(&tcpReadlock);
 	while (1 == 1)
 	{
 		byteRead = read(socketfd, buffer, packetLength-totalRead);
-		//debugging
-		//fprintf(stderr, "thread %lu: tcpread buffer:%.*s\n", pthread_self(), byteRead, buffer);
-		//debugging
 		if (byteRead < 0)
 		{
 			if (errno == EAGAIN)
 				return -9;
 			fprintf(stderr, "Error (read): %s\n", strerror_r(errno, errorMessage, ERR_LEN));
 			free(bufferHead);
-			//if(!isServer)
-			//	pthread_mutex_unlock(&tcpReadlock);
 			return -2;
 		}
 		buffer += byteRead;
@@ -221,10 +205,8 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 		if (byteRead == 0 || packetLength <= totalRead)
 			break;
 	}
-	//if(!isServer)
-	//	pthread_mutex_unlock(&tcpReadlock);
+
 	if(bufferHead == NULL || totalRead == 0) {
-		//fprintf(stderr, "Packet Read is NULL\n");
 		free(bufferHead);
 		return 0;
 	}
@@ -240,8 +222,6 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	}
 	string component = pktString.substr(startIndex + 12, endIndex - startIndex - 12);
 	pkt.content_len = (unsigned int) stoi(component);
-	//prints are for debug purposes
-	//printf("content_len:%u\n", pkt.content_len);
 
 	startIndex = pktString.find(",cmd_code:", endIndex);	//next component start
 	endIndex = pktString.find(",req_num:", startIndex);	//next component end
@@ -251,7 +231,6 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	}
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
 	pkt.cmd_code = static_cast<commands>(stoi(component));
-	//printf("cmd_code:%d\n", pkt.cmd_code);
 
 	startIndex = pktString.find(",req_num:", endIndex);
 	endIndex = pktString.find(",sessionId:", startIndex);
@@ -261,7 +240,6 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	}
 	component = pktString.substr(startIndex + 9, endIndex - startIndex - 9);
 	pkt.req_num = (unsigned int) stoul(component);
-	//printf("req_num:%u\n", pkt.req_num);
 
 	startIndex = pktString.find(",sessionId:", endIndex);
 	endIndex = pktString.find(",username:", startIndex);
@@ -271,7 +249,6 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	}
 	component = pktString.substr(startIndex + 11, endIndex - startIndex - 11);
 	pkt.sessionId = (unsigned int) stoul(component);
-	//printf("sessionId:%u\n", pkt.sessionId);
 
 	startIndex = pktString.find(",username:", endIndex);
 	endIndex = pktString.find(",password:", startIndex);
@@ -282,7 +259,6 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
 	if (component.length() > 0)
 		pkt.contents.username = component;
-	//printf("username:%s\n", pkt.contents.username.c_str());
 
 	startIndex = pktString.find(",password:", endIndex);
 	endIndex = pktString.find(",postee:", startIndex);
@@ -293,7 +269,6 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
 	if (component.length() > 0)
 		pkt.contents.password = component;
-	//printf("password:%s\n", pkt.contents.password.c_str());
 
 	startIndex = pktString.find(",postee:", endIndex);
 	endIndex = pktString.find(",post:", startIndex);
@@ -304,7 +279,6 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 8, endIndex - startIndex - 8);
 	if (component.length() > 0)
 		pkt.contents.postee = component;
-	//printf("postee:%s\n", pkt.contents.postee.c_str());
 
 	startIndex = pktString.find(",post:", endIndex);
 	endIndex = pktString.find(",wallOwner:", startIndex);
@@ -315,7 +289,6 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 6, endIndex - startIndex - 6);
 	if (component.length() > 0)
 		pkt.contents.post = component;
-	//printf("post:%s\n", pkt.contents.post.c_str());
 
 	startIndex = pktString.find(",wallOwner:", endIndex);
 	endIndex = pktString.find(",rcvd_cnts:", startIndex);
@@ -326,7 +299,6 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 11, endIndex - startIndex - 11);
 	if (component.length() > 0)
 		pkt.contents.wallOwner = component;
-	//printf("wallOwner:%s\n", pkt.contents.wallOwner.c_str());
 
 	startIndex = pktString.find(",rcvd_cnts:", endIndex);
 	if(startIndex == -1) {
@@ -336,7 +308,6 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	component = pktString.substr(startIndex + 11, packetLength - startIndex - 11);
 	if (component.length() > 0)
 		pkt.contents.rcvd_cnts = component;
-	//printf("rcvd_cnts:%s\n", pkt.contents.rcvd_cnts.c_str());
 
 	return totalRead;
 }
@@ -393,18 +364,12 @@ int write_socket(int socketfd, struct packet &pkt) {
 
 	auto sendTime = chrono::high_resolution_clock::now();
 
-	//time_t sendTime;
-	//sendTime = time(NULL);
-
 	struct packet ackPkt;
 
 
 	Retry:
 	pthread_mutex_lock(&bufferPktlock);
 	//if there are buffer pkts, check each, see if the wanted ACK is in them
-	//debugging
-	//fprintf(stderr, "bufferoccupied before buffer change:%i\n", bufferOccupied);
-	//debugging
 	if(bufferOccupied > 0) {
 		for(int i = 0; i < bufferOccupied; i++) {
 			deepCopyPkt(ackPkt, bufferPkts[i]);
@@ -422,7 +387,6 @@ int write_socket(int socketfd, struct packet &pkt) {
 			}
 		}
 	}
-	//fprintf(stderr, "bufferoccupied after buffer change:%i\n", bufferOccupied);
 	pthread_mutex_unlock(&bufferPktlock);
 
 	if(doTCPRead) {
@@ -479,8 +443,6 @@ int write_socket(int socketfd, struct packet &pkt) {
 	std::chrono::duration<double> response_time = endTime - sendTime;
 	std::time_t endTimeStamp = std::chrono::system_clock::to_time_t(endTime);
 	std::time_t sendTimeStamp = std::chrono::system_clock::to_time_t(sendTime);
-	//time_t timeStamp;
-	//timeStamp = time(NULL);
 	fprintf(logFile, "Write %d byte at %s\t[len: %u | cmd: %s | num: %u | sid: %u]\n", writeError, std::ctime(&sendTimeStamp), pkt.content_len, getCommand(pkt.cmd_code), pkt.req_num, pkt.sessionId);
 	fprintf(logFile, "Received ACK packet at %sResponse time: %f ms\n\n", std::ctime(&endTimeStamp), response_time.count()*1000);
 	fclose(logFile);
@@ -499,7 +461,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 		return -5;
 	}
 
-	//fprintf(stderr, "bufferoccupied before buffer change:%i\n", bufferOccupied);
 	pthread_mutex_lock(&bufferPktlock);
 	if(bufferOccupied > 0) {
 		for(int i = 0; i < bufferOccupied; i++) {
@@ -517,7 +478,6 @@ int read_socket(int socketfd, struct packet &pkt) {
 		}
 	}
 	pthread_mutex_unlock(&bufferPktlock);
-	//fprintf(stderr, "bufferoccupied after buffer change:%i\n", bufferOccupied);
 
 	Retry:
 	int readError = read_socket_helper(socketfd, pkt);

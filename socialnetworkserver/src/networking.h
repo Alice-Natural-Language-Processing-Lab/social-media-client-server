@@ -1,10 +1,3 @@
-/*
- * networking.h
- *
- *  Created on: Nov 8, 2018
- *      Author: pan
- */
-
 #ifndef NETWORKING_H_
 #define NETWORKING_H_
 
@@ -82,6 +75,7 @@ return -2 if error happened in the read() funciton
 return -3 if failed to send ACK packet
 return -4 if recieved a ACK packet
 return -5 if recieved packet length is incorrect
+return -9 if time out
 return positive number if success, return is the total bytes of the message
 */
 int read_socket(int socketfd, struct packet &pkt);

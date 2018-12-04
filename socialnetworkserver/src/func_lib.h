@@ -1,10 +1,3 @@
-/*
- * func_lib.h
- *
- *  Created on: Oct 17, 2018
- *      Author: pournami
- */
-
 #ifndef FUNC_LIB_H_
 #define FUNC_LIB_H_
 
