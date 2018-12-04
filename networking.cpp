@@ -14,6 +14,7 @@ struct packet bufferPkts[10];
 pthread_mutex_t seqNumlock;
 pthread_mutex_t bufferPktlock;
 pthread_mutex_t logFilelock;
+pthread_mutex_t tcpReadlock;
 
 int create_server_socket(int portNum) {
 	isServer = true;
@@ -160,9 +161,11 @@ int write_socket_helper(int socketfd, struct packet &pkt) {
 	strcat(pktString, pkt.contents.rcvd_cnts.c_str());
 	//total is 12+10+9+11+10+10+8+6+11+11 = 98
 
+	//For Debug Purpose:
+	//printf("stirng: %s\nstringLength: %d\n", pktString, (int)strlen(pktString));
 	if(write(socketfd, pktString, strlen(pktString)) < 0) {
 		char errorMessage[ERR_LEN];
-		fprintf(stderr, "Error (write): %s\n", strerror_r(errno, errorMessage, ERR_LEN));
+		fprintf(stderr, "Error (read): %s\n", strerror_r(errno, errorMessage, ERR_LEN));
 		return -1;
 	}
 	return (int)strlen(pktString);
@@ -179,15 +182,18 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	int packetLength = 90;
 
 	// Read each request stream repeatedly
+	pthread_mutex_lock(&tcpReadlock);
 	while (1 == 1)
 	{
 		byteRead = read(socketfd, buffer, packetLength-totalRead);
+		//debugging
+		fprintf(stderr, "thread %lu: tcpread buffer:%.*s\n", pthread_self(), byteRead, buffer);
+		//debugging
 		if (byteRead < 0)
 		{
-			if (errno == EAGAIN)
-				return -9;
 			fprintf(stderr, "Error (read): %s\n", strerror_r(errno, errorMessage, ERR_LEN));
 			free(bufferHead);
+			pthread_mutex_unlock(&tcpReadlock);
 			return -2;
 		}
 		buffer += byteRead;
@@ -199,15 +205,14 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 		if(startIndex != -1 && endIndex != -1) {
 			string contentLengthString = temp.substr(startIndex + 12, endIndex - startIndex - 12);
 			packetLength = 98 + contentLengthString.length() + stoi(contentLengthString);
-		} else {
-			packetLength = MAX_PACKET_LEN;
 		}
 		//Break the loop when the request structure is read completely
 		if (byteRead == 0 || packetLength <= totalRead)
 			break;
 	}
-
+	pthread_mutex_unlock(&tcpReadlock);
 	if(bufferHead == NULL || totalRead == 0) {
+		//fprintf(stderr, "Packet Read is NULL\n");
 		free(bufferHead);
 		return 0;
 	}
@@ -218,97 +223,108 @@ int read_socket_helper(int socketfd, struct packet &pkt) {
 	startIndex = pktString.find("content_len:");	//first ':'
 	endIndex = pktString.find(",cmd_code:");		//first ','
 	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packet Format Wrong1\n");
+		fprintf(stderr, "Packer Format Wrong1\n");
 		return -1;
 	}
 	string component = pktString.substr(startIndex + 12, endIndex - startIndex - 12);
 	pkt.content_len = (unsigned int) stoi(component);
+	//prints are for debug purposes
+	//printf("content_len:%u\n", pkt.content_len);
 
 	startIndex = pktString.find(",cmd_code:", endIndex);	//next component start
 	endIndex = pktString.find(",req_num:", startIndex);	//next component end
 	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packet Format Wrong2\n");
+		fprintf(stderr, "Packer Format Wrong2\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
 	pkt.cmd_code = static_cast<commands>(stoi(component));
+	//printf("cmd_code:%d\n", pkt.cmd_code);
 
 	startIndex = pktString.find(",req_num:", endIndex);
 	endIndex = pktString.find(",sessionId:", startIndex);
 	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packet Format Wrong3\n");
+		fprintf(stderr, "Packer Format Wrong3\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 9, endIndex - startIndex - 9);
 	pkt.req_num = (unsigned int) stoul(component);
+	//printf("req_num:%u\n", pkt.req_num);
 
 	startIndex = pktString.find(",sessionId:", endIndex);
 	endIndex = pktString.find(",username:", startIndex);
 	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packet Format Wrong4\n");
+		fprintf(stderr, "Packer Format Wrong4\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 11, endIndex - startIndex - 11);
 	pkt.sessionId = (unsigned int) stoul(component);
+	//printf("sessionId:%u\n", pkt.sessionId);
 
 	startIndex = pktString.find(",username:", endIndex);
 	endIndex = pktString.find(",password:", startIndex);
 	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packet Format Wrong5\n");
+		fprintf(stderr, "Packer Format Wrong5\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
 	if (component.length() > 0)
 		pkt.contents.username = component;
+	//printf("username:%s\n", pkt.contents.username.c_str());
 
 	startIndex = pktString.find(",password:", endIndex);
 	endIndex = pktString.find(",postee:", startIndex);
 	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packet Format Wrong6\n");
+		fprintf(stderr, "Packer Format Wrong6\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 10, endIndex - startIndex - 10);
 	if (component.length() > 0)
 		pkt.contents.password = component;
+	//printf("password:%s\n", pkt.contents.password.c_str());
 
 	startIndex = pktString.find(",postee:", endIndex);
 	endIndex = pktString.find(",post:", startIndex);
 	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packet Format Wrong7\n");
+		fprintf(stderr, "Packer Format Wrong7\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 8, endIndex - startIndex - 8);
 	if (component.length() > 0)
 		pkt.contents.postee = component;
+	//printf("postee:%s\n", pkt.contents.postee.c_str());
 
 	startIndex = pktString.find(",post:", endIndex);
 	endIndex = pktString.find(",wallOwner:", startIndex);
 	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packet Format Wrong8\n");
+		fprintf(stderr, "Packer Format Wrong8\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 6, endIndex - startIndex - 6);
 	if (component.length() > 0)
 		pkt.contents.post = component;
+	//printf("post:%s\n", pkt.contents.post.c_str());
 
 	startIndex = pktString.find(",wallOwner:", endIndex);
 	endIndex = pktString.find(",rcvd_cnts:", startIndex);
 	if(startIndex == -1 || endIndex == -1) {
-		fprintf(stderr, "Packet Format Wrong9\n");
+		fprintf(stderr, "Packer Format Wrong9\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 11, endIndex - startIndex - 11);
 	if (component.length() > 0)
 		pkt.contents.wallOwner = component;
+	//printf("wallOwner:%s\n", pkt.contents.wallOwner.c_str());
 
 	startIndex = pktString.find(",rcvd_cnts:", endIndex);
 	if(startIndex == -1) {
-		fprintf(stderr, "Packet Format Wrong10\n");
+		fprintf(stderr, "Packer Format Wrong10\n");
 		return -1;
 	}
 	component = pktString.substr(startIndex + 11, packetLength - startIndex - 11);
 	if (component.length() > 0)
 		pkt.contents.rcvd_cnts = component;
+	//printf("rcvd_cnts:%s\n", pkt.contents.rcvd_cnts.c_str());
 
 	return totalRead;
 }
@@ -320,28 +336,16 @@ void deepCopyPkt(struct packet &destination, struct packet &source) {
     destination.sessionId = source.sessionId;
     if(source.contents.username.length() > 0)
     	destination.contents.username = source.contents.username;
-	else
-		destination.contents.username = string();
     if(source.contents.password.length() > 0)
     	destination.contents.password = source.contents.password;
-	else
-		destination.contents.password = string();
     if(source.contents.postee.length() > 0)
     	destination.contents.postee = source.contents.postee;
-	else
-		destination.contents.postee = string();
     if(source.contents.post.length() > 0)
     	destination.contents.post = source.contents.post;
-	else
-		destination.contents.post = string();
     if(source.contents.wallOwner.length() > 0)
     	destination.contents.wallOwner = source.contents.wallOwner;
-	else
-		destination.contents.wallOwner = string();
     if(source.contents.rcvd_cnts.length() > 0)
     	destination.contents.rcvd_cnts = source.contents.rcvd_cnts;
-	else
-		destination.contents.rcvd_cnts = string();
 }
 
 int write_socket(int socketfd, struct packet &pkt) {
@@ -372,6 +376,9 @@ int write_socket(int socketfd, struct packet &pkt) {
 	Retry:
 	pthread_mutex_lock(&bufferPktlock);
 	//if there are buffer pkts, check each, see if the wanted ACK is in them
+	//debugging
+	fprintf(stderr, "bufferoccupied before buffer change:%i\n", bufferOccupied);
+	//debugging
 	if(bufferOccupied > 0) {
 		for(int i = 0; i < bufferOccupied; i++) {
 			deepCopyPkt(ackPkt, bufferPkts[i]);
@@ -389,6 +396,7 @@ int write_socket(int socketfd, struct packet &pkt) {
 			}
 		}
 	}
+	fprintf(stderr, "bufferoccupied after buffer change:%i\n", bufferOccupied);
 	pthread_mutex_unlock(&bufferPktlock);
 
 	if(doTCPRead) {
@@ -461,6 +469,7 @@ int read_socket(int socketfd, struct packet &pkt) {
 		return -5;
 	}
 
+	fprintf(stderr, "bufferoccupied before buffer change:%i\n", bufferOccupied);
 	pthread_mutex_lock(&bufferPktlock);
 	if(bufferOccupied > 0) {
 		for(int i = 0; i < bufferOccupied; i++) {
@@ -478,14 +487,12 @@ int read_socket(int socketfd, struct packet &pkt) {
 		}
 	}
 	pthread_mutex_unlock(&bufferPktlock);
+	fprintf(stderr, "bufferoccupied after buffer change:%i\n", bufferOccupied);
 
 	Retry:
 	int readError = read_socket_helper(socketfd, pkt);
 	if(readError <= 0)	//error in reading
-	{
-		fprintf(stderr, "ReadError <= 0: %d\n", readError);
 		return readError;
-	}
 
 	if(pkt.cmd_code == ACK) {
 		pthread_mutex_lock(&bufferPktlock);
