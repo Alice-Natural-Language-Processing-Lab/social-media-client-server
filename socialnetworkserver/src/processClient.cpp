@@ -1,32 +1,11 @@
-/*
- * processClient.cpp
- *
- *  Created on: Oct 17, 2018
- *      Author: pournami
- */
 #include <time.h>
 #include "func_lib.h"
+#include "mysql_lib.h"
 #include "structures.h"
 
+extern DatabaseCommandInterface database;
+extern unsigned int sessionID;
 using namespace std;
-
-#define ERR_LEN			256
-#define DEBUG
-
-const char * getCommand(int enumVal)
-{
-  return commandList[enumVal];
-}
-
-void handleClient(int sock_fd);
-void readRequest(int sock_fd, char *buffer, int req_len);
-int parsePacket(struct packet *req);
-int sessionValidity(struct packet *req);
-int permissionValidity(struct packet *req, int valid);
-
-/*
- * client initial setup
- */
 
 /*
  * handleClient() - handle each client connection
@@ -34,94 +13,60 @@ int permissionValidity(struct packet *req, int valid);
  */
 void handleClient(int sock_fd)
 {
-	int sock_read, sock_write, sock_close;
-	struct packet *req = (struct packet *)malloc(sizeof(struct packet));
-	char *error = (char *)malloc(sizeof(char) * ERR_LEN);
-	int threadId = pthread_self();
-	char *buffer = (char *)req;
-	int req_len, ret;
-	time_t now;
+	int sock_read, ret;
+
 
 	/* Accept the request persistently*/
 	while(1)
 	{
-		memset(req, 0, sizeof(struct packet));
-		req_len = sizeof(struct packet);
+		struct packet req;
+
 		/* Read client request */
-		readRequest(sock_fd, buffer, req_len);
-<<<<<<< HEAD
-=======
-		if(!strlen(buffer))
+		sock_read = read_socket(sock_fd, req);
+		if(sock_read < 0)
+		{
+			if (sock_read == -9)
+				continue;
+			printf("Error(read_socket)\n");
 			break;
->>>>>>> feature-networking
+		}
+		if (!sock_read ) /*Client connection EOF */
+		{
+			req.sessionId = sessionID;
+			ret = database.logout(req);
+			if (ret < 0)
+			{
+				printf("Error (logout): User logging out from database failed\n");
+				return;
+			}
+			break;
+		}
+
 		/* Parse the packet for valid packet structure */
-		ret = parsePacket(req);
+		ret = parsePacket(&req);
 		if (ret < 0)
 		{
 			printf("Error (parsePacket): Packet parsing/checking failed\n");
-			terminateClient(sock_fd);
-		}
-		now = time(NULL);
-		DEBUG("%s: Request received:\n", strtok(ctime(&now), "\n"));
-		DEBUG("%d | %s | %d | %d\n", req->content_len, getCommand(req->cmd_code), req->req_num, req->sessionId);
-		/* Validate session of the client */
-		ret = sessionValidity(req);
-		if (ret < 0) /* session validity could not be established */
-		{
-			printf("Error (sessionValidity): session validity could not be established\n");
-			/* TODO : SEND WARNING MESSAGE TO CLIENT "NOT LOGGED IN/SESSION EXPIRED" */
-			terminateClient(sock_fd);
-			return;
+			break;
 		}
 
-		/* process the request with appropriate permissions */
-<<<<<<< HEAD
-		ret = processRequest(req);
-=======
-		ret = processRequest(sock_fd, req);
->>>>>>> feature-networking
+		/* Validate session of the client */
+		ret = sessionValidity(&req);
 		if (ret < 0)
 		{
-			printf("Error (processRequest): request processing failed\n");
-			return;
+			sendPacket(sock_fd, req);
+			if (ret == -2)
+				printf("Error (sessionValidity): DB could not process session validity\nClosing Client Connection\n");
+			break;
 		}
 
-		/* TODO : terminate client connection on appropriate request */
-	}
-	DEBUG("Client connection closed\n");
-	close(sock_fd);
-	return;
-
-}
-
-/*
- * readRequest() - read client request repeatedly
- * sock_fd: slave socket file descriptor
- * buffer: starting point of request structure
- * req_len: length of request structure
- */
-void readRequest(int sock_fd, char *buffer, int req_len)
-{
-	int sock_read;
-	char *error = (char *)malloc(sizeof(char) * ERR_LEN);
-
-	/* Read each request stream repeatedly */
-	while (1)
-	{
-		sock_read = read(sock_fd, buffer, req_len);
-		if (sock_read < 0)
-		{
-			strerror_r(errno, error, ERR_LEN);
-			printf("Error (read): %s\n", error);
-			return;
-		}
-		buffer += sock_read;
-		req_len	-= sock_read;
-		/* Break the loop when the request structure is read completely */
-		if (!sock_read || req_len <= 0)
+		/* process the request */
+		ret = processRequest(sock_fd, req);
+		if (ret < 0)
 			break;
 	}
-	cout<<sock_read<<" bytes read\n";
+	destroy_socket(sock_fd);
+	pthread_exit(NULL);
 	return;
 }
 
@@ -132,13 +77,6 @@ void readRequest(int sock_fd, char *buffer, int req_len)
  */
 int parsePacket(struct packet *req)
 {
-	DEBUG("Parsing Packet\n");
-	/* TODO : Complete the function */
-<<<<<<< HEAD
-	if (req->cmd_code != LOGIN && req->cmd_code != LOGOUT && req->cmd_code != POST && req->cmd_code != LIST)
-	{
-		printf("Invalid command %d", req->cmd_code);
-=======
 	switch (req->cmd_code)
 	{
 	case LOGIN:
@@ -151,9 +89,12 @@ int parsePacket(struct packet *req)
 		break;
 	case SHOW:
 		break;
+	case ACK:
+		break;
+	case NOTIFY:
+		break;
 	default:
 		printf("Invalid command, code = %d\n", req->cmd_code);
->>>>>>> feature-networking
 		return -1;
 	}
 	return 0;
@@ -166,40 +107,9 @@ int parsePacket(struct packet *req)
  */
 int sessionValidity(struct packet *req)
 {
-	DEBUG("Checking session validity\n");
-	/* TODO : Complete the function */
 	int ret = 0;
-<<<<<<< HEAD
-	int valid = 0;
-=======
-	int valid = 1;
->>>>>>> feature-networking
-	/* check session validity and modify variable valid*/
-
-	/* Validate permissions of the client */
-	ret = permissionValidity(req, valid);
-	if (ret < 0)
-	{
-		printf("User do not have permission to execute the command\n");
-		return -1;
-	}
+	if (req->cmd_code != LOGIN)
+		ret = database.hasValidSession(*req);
 	return ret;
 }
 
-/*
- * permissionValidity() - validate the client session
- * req: request structure
- * return 0(Valid permission) -1(Invalid permission)
- */
-int permissionValidity(struct packet *req, int valid)
-{
-	DEBUG("Checking permission for request\n");
-	/* TODO : Complete the function */
-	int ret = 0;
-	if (!valid)
-	{
-		if (req->cmd_code != LOGIN)
-			return -1;
-	}
-	return 0;
-}

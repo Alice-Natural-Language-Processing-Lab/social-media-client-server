@@ -1,64 +1,35 @@
-/*
- * processRequests.cpp
- *
- *  Created on: Oct 22, 2018
- *      Author: pournami
- */
 #include "func_lib.h"
 #include "structures.h"
+#include  "mysql_lib.h"
+extern DatabaseCommandInterface database;
+
+extern pthread_cond_t notify_cond;
+extern pthread_mutex_t notify_mutex;
+extern int notify_variable;
 
 using namespace std;
-#define DEBUG printf
-
-<<<<<<< HEAD
-int processRequest(struct packet *req);
-void userLogin(struct packet *req);
-void userLogout(struct packet *req);
-void listAllUsers(struct packet *req);
-void postMessage(struct packet *req);
-=======
-int processRequest(int sock_fd, struct packet *req);
-void userLogin(int sock_fd, struct packet *req);
-void userLogout(int sock_fd, struct packet *req);
-void listAllUsers(int sock_fd, struct packet *req);
-void postMessage(int sock_fd, struct packet *req);
-void showWallMessage(int sock_fd, struct packet *req);
-int sendPacket(int sock_fd, struct packet *req, string value1);
-int sendPacket(int sock_fd, struct packet *req, unsigned int value1);
+#define DEBUG
 
 unsigned int sessionID;
->>>>>>> feature-networking
 
 /*
  * processRequest() - validate the client session
  * req: request structure
  * return 0(request processed successfully) -1(request processing failed)
  */
-<<<<<<< HEAD
-int processRequest(struct packet *req)
+int processRequest(int sock_fd, struct packet &req)
 {
-	if (req->cmd_code == LOGIN)
-		userLogin(req);
-	else if(req->cmd_code == LOGOUT)
-		userLogout(req);
-	else if(req->cmd_code == LIST)
-		listAllUsers(req);
-	else if(req->cmd_code == POST)
-		postMessage(req);
-=======
-int processRequest(int sock_fd, struct packet *req)
-{
-	if (req->cmd_code == LOGIN)
+
+	if (req.cmd_code == LOGIN)
 		userLogin(sock_fd, req);
-	else if(req->cmd_code == LOGOUT)
+	else if(req.cmd_code == LOGOUT)
 		userLogout(sock_fd, req);
-	else if(req->cmd_code == LIST)
+	else if(req.cmd_code == LIST)
 		listAllUsers(sock_fd, req);
-	else if(req->cmd_code == POST)
+	else if(req.cmd_code == POST)
 		postMessage(sock_fd, req);
-	else if(req->cmd_code == SHOW)
+	else if(req.cmd_code == SHOW)
 		showWallMessage(sock_fd, req);
->>>>>>> feature-networking
 	else
 		printf("Invalid Option\n");
 	return 0;
@@ -68,39 +39,29 @@ int processRequest(int sock_fd, struct packet *req)
  * userLogin() - login request for user
  * req: request structure
  */
-<<<<<<< HEAD
-void userLogin(struct packet *req)
-=======
-void userLogin(int sock_fd, struct packet *req)
->>>>>>> feature-networking
+void userLogin(int sock_fd, struct packet &req)
 {
-	sessionID = 101;
-	DEBUG("User Login Request\n");
-	DEBUG("packet len is %d\n",req->content_len);
-	DEBUG("req num is %d\n",req->req_num);
-	/* TODO: User login to DB
-	 * generate session id*/
-	DEBUG("user name is :");
-	cout<<req->contents.username<<endl;
-	DEBUG("password is :");
-	cout<<req->contents.password<<endl;
-	sendPacket(sock_fd, req, sessionID);
-	return;
-}
+	int ret = 0, snd;
 
-/*
- * userLogout() - logout request for user
- * req: request structure
- */
-<<<<<<< HEAD
-void userLogout(struct packet *req)
-=======
-void userLogout(int sock_fd, struct packet *req)
->>>>>>> feature-networking
-{
-	DEBUG("User Logout Request\n");
-	/* TODO: User logout from DB*/
-	DEBUG("Terminating client connection\n");
+	ret = database.login(req, sock_fd);
+	snd = sendPacket(sock_fd, req);
+	if (snd < 0)
+	{
+		printf("Error (sendPacket): sending response failed\n");
+		return;
+	}
+	if (ret == -2)
+	{
+		printf("Error (login): DB login error\nClosing Client Connection\n");
+		destroy_socket(sock_fd);
+		pthread_exit(NULL);
+		return;
+	}
+	sessionID = req.sessionId;
+	pthread_mutex_lock(&notify_mutex);
+	notify_variable = 1;
+	pthread_cond_signal(&notify_cond);
+	pthread_mutex_unlock(&notify_mutex);
 	return;
 }
 
@@ -108,19 +69,25 @@ void userLogout(int sock_fd, struct packet *req)
  * listAllUsers() - List all users in the DB
  * req: request structure
  */
-<<<<<<< HEAD
-void listAllUsers(struct packet *req)
+void listAllUsers(int sock_fd, struct packet &req)
 {
-	DEBUG("Request to list all users\n");
-	/* TODO: List all users from DB*/
-=======
-void listAllUsers(int sock_fd, struct packet *req)
-{
-	DEBUG("Request to list all users\n");
-	/* TODO: List all users from DB*/
-	string userlist = "a,b,c,d,e,f";
-	sendPacket(sock_fd, req, userlist);
->>>>>>> feature-networking
+	int ret = 0, snd;
+
+	ret = database.listUsers(req);
+	snd = sendPacket(sock_fd, req);
+	if (snd < 0)
+	{
+		printf("Error (sendPacket): sending response failed\n");
+		return;
+	}
+	if (ret == -2)
+	{
+		printf("Error (listUsers): DB listUsers error\nClosing Client Connection");
+		userLogout(sock_fd, req);
+		destroy_socket(sock_fd);
+		pthread_exit(NULL);
+		return;
+	}
 	return;
 }
 
@@ -128,87 +95,86 @@ void listAllUsers(int sock_fd, struct packet *req)
  * postMessage() - Post a message to a user's wall
  * req: request structure
  */
-<<<<<<< HEAD
-void postMessage(struct packet *req)
-=======
-void postMessage(int sock_fd, struct packet *req)
->>>>>>> feature-networking
+void postMessage(int sock_fd, struct packet &req)
 {
-	DEBUG("Request to post to wall\n");
-	/* TODO: Post to a wall */
-	DEBUG("postee is %s\n", req->contents.postee);
-	DEBUG("post is %s\n", req->contents.post);
+	int ret = 0, snd;
+
+	ret = database.postOnWall(req);
+	if (ret < 0)
+	{
+		printf("Error (postOnWall): post to database wall failed\n");
+		snd = sendPacket(sock_fd, req);
+		if (snd < 0)
+			printf("Error (sendPacket): sending response failed\n");
+		return;
+	}
+	pthread_mutex_lock(&notify_mutex);
+	notify_variable = 1;
+	pthread_cond_signal(&notify_cond);
+	pthread_mutex_unlock(&notify_mutex);
 	return;
 }
 
-void showWallMessage(int sock_fd, struct packet *req)
+/*
+ * showWallMessage() - show a user's wall
+ * req: request structure
+ */
+void showWallMessage(int sock_fd, struct packet &req)
 {
-	DEBUG("Request to show wall\n");
-	/* TODO: send the wall */
-	DEBUG("show %s's wall\n", req->contents.wallOwner);
-	string wall = "hi \nhello \nhow are you";
-	sendPacket(sock_fd, req, wall);
+	int ret, snd;
+
+	DEBUG("show %s's wall\n", req.contents.wallOwner.c_str());
+	ret = database.showWall(req);
+	snd = sendPacket(sock_fd, req);
+	if (snd < 0)
+	{
+		printf("Error (sendPacket): sending response failed\n");
+		return;
+	}
+	if (ret == -2)
+	{
+		printf("Error (showWall): DB show Wall error\nClosing Client Connection\n");
+		userLogout(sock_fd, req);
+		destroy_socket(sock_fd);
+		pthread_exit(NULL);
+		return;
+	}
 	return;
 }
 
-int sendPacket(int sock_fd, struct packet *req, string value1)
+/*
+ * userLogout() - logout request for user
+ * req: request structure
+ */
+void userLogout(int sock_fd, struct packet &req)
 {
-    struct packet resp;
-    int send_bytes;
+	int ret;
 
-    resp.cmd_code = req->cmd_code;
-    resp.sessionId = req->sessionId;
-    switch(resp.cmd_code)
-    {
-    case LIST:
-    	strcpy(resp.contents.rvcd_cnts, value1.c_str());
-    	//pkt.contents.rvcd_cnts = value1;
-    	break;
-    case SHOW:
-    	strcpy(resp.contents.rvcd_cnts, value1.c_str());
-    	//pkt.contents.rvcd_cnts = value1;
-    	break;
-    default:
-    	printf("Invalid Command Code\n");
-    	return -1;
-    }
-    resp.req_num = req->req_num;
-    resp.content_len = strlen(resp.contents.rvcd_cnts);
-
-    send_bytes = write(sock_fd, &resp, sizeof(resp));
-    if (send_bytes < 0)
-    {
-        perror("Write error\n");
-        return -1;
-    }
-    cout<<send_bytes<<" bytes sent\n";
-    return 0;
+	ret = database.logout(req);
+	if (ret < 0)
+	{
+		printf("Error (logout): User logging out from database failed\n");
+		return;
+	}
+	destroy_socket(sock_fd);
+	pthread_exit(NULL);
+	return;
 }
 
-int sendPacket(int sock_fd, struct packet *req, unsigned int value1)
+/*
+ * sendPacket() - send the response to client
+ * resp: response packet
+ * returns 0 if success -1 if error
+ */
+int sendPacket(int sock_fd, struct packet &resp)
 {
-    struct packet resp;
-    int send_bytes;
+	int send_bytes;
 
-    resp.cmd_code = req->cmd_code;
-    switch(resp.cmd_code)
-    {
-    case LOGIN:
-    	resp.sessionId = value1;
-    	break;
-    default:
-    	printf("Invalid Command Code\n");
-    	return -1;
-    }
-    resp.req_num = req->req_num;
-    resp.content_len = strlen(resp.contents.rvcd_cnts);
-
-    send_bytes = write(sock_fd, &resp, sizeof(resp));
-    if (send_bytes < 0)
-    {
-        perror("Write error\n");
-        return -1;
-    }
-    cout<<send_bytes<<" bytes sent\n";
-    return 0;
+	send_bytes = write_socket(sock_fd, resp);
+	if (send_bytes < 0)
+	{
+		printf("Error (write_socket)\n");
+		return -1;
+	}
+	return 0;
 }

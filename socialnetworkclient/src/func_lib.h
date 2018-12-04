@@ -1,10 +1,3 @@
-/*
- * func_lib.h
- *
- *  Created on: Nov 18, 2018
- *      Author: jagdeep
- */
-
 #ifndef FUNC_LIB_H_
 #define FUNC_LIB_H_
 
@@ -13,6 +6,7 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <string.h>
+#include <string>
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
@@ -23,17 +17,16 @@
 #include <pthread.h>
 #include "structures.h"
 
-
-static const char * commandList[] = { "LOGIN", "LOGOUT", "POST", "SHOW", "LIST", "NOTIFY", "ACK" };
+using namespace std;
 
 void getLoginInfo(string &pw);
-int enterLoginMode(string servername, string serverport);
-int enterWebBrowserMode(string servername, string serverport);
-int getAddrInfo(string host, string port, struct addrinfo **serv_info);
+int enterLoginMode(string servername, int serverport);
+int enterWebBrowserMode(string servername, int serverport);
+
 
 void readThread(int sock_fd);
 int sendPacket(int sock_fd, enum commands cmd_code, string key, string value);
-void listUsers(int sock_fd);
+void list(int sock_fd);
 void printCmdList();
 void post(int sock_fd);
 void show(int sock_fd);
@@ -43,14 +36,9 @@ void createPostPacket(string postee, string post, struct packet &pkt);
 void createShowPacket(string wallOwner, struct packet &pkt);
 
 void writeThread(int sock_fd);
-void readResponse(int sock_fd, char *buffer, int req_len);
 int parsePacket(struct packet *req);
 void displayContents(struct packet *resp);
 int processResponse(int sock_fd, struct packet *resp);
 
 
-
-
-
 #endif /* FUNC_LIB_H_ */
-

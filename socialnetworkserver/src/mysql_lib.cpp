@@ -1,10 +1,3 @@
-/*
- * mysql_lib.cpp
- *
- *  Created on: Nov 19, 2018
- *      Author: michael
- */
-
 #include "mysql_lib.h"
 
 string wall_entry_format(string timestamp, string poster, string postee,
@@ -96,7 +89,6 @@ int DatabaseCommandInterface::hasValidSession(struct packet& pkt,
 		pstmt->setUInt(2, session_timeout);
 		res = pstmt->executeQuery();
 
-		//printResults();
 		switch (res->rowsCount()) {
 		case 1:
 			//valid session
@@ -158,8 +150,6 @@ int DatabaseCommandInterface::login(struct packet &pkt,
 		pstmt->setString(2, pkt.contents.password);
 		res = pstmt->executeQuery();
 
-		//printResults();
-
 		if (res->rowsCount() != 1) {
 			//username and password does not exist or is incorrect
 			pkt.contents.rcvd_cnts =
@@ -175,7 +165,6 @@ int DatabaseCommandInterface::login(struct packet &pkt,
 		delete res;
 
 		//generate and check for valid session_id
-		//this statement doesn't check for existing but invalid session ids. Will eventually run out of session ids
 		pstmt = con->prepareStatement(
 				"select * from InteractionLog where sessionID = ?");
 		while (!valid_session_id) {
@@ -186,8 +175,6 @@ int DatabaseCommandInterface::login(struct packet &pkt,
 			pstmt->setUInt(1, temp_session_id);
 			res = pstmt->executeQuery();
 
-			//printResults();
-
 			if (res->rowsCount() == 0) {
 				//session_id doesn't already exist in table, use this session id
 				valid_session_id = true;
@@ -197,7 +184,6 @@ int DatabaseCommandInterface::login(struct packet &pkt,
 		delete pstmt;
 
 		//insert row in interaction log
-		//how to make sure another thread doesn't generate same sessionid and update concurrently? - mainly relying on low probability, similar approach is used for session ids in the wild
 		if (insertInteractionLog(temp_session_id, false,
 				"LOGIN " + pkt.contents.username, temp_user_id,
 				socket_descriptor) != 0) {
@@ -232,8 +218,6 @@ int DatabaseCommandInterface::listUsers(struct packet &pkt) {
 	try {
 		stmt = con->createStatement();
 		res = stmt->executeQuery("select userName from Users");
-
-		//printResults();
 
 		if (res->rowsCount() < 1) {
 			//SQL not returning users
@@ -308,7 +292,6 @@ int DatabaseCommandInterface::showWall(struct packet &pkt) {
 		pstmt->setString(1, pkt.contents.wallOwner);
 		res = pstmt->executeQuery();
 
-		//printResults();
 
 		if (res->rowsCount() == 0) {
 			//no wall contents for user
@@ -576,8 +559,6 @@ int DatabaseCommandInterface::getUserID(std::string user_name,
 		pstmt = con->prepareStatement("select * from Users where userName = ?");
 		pstmt->setString(1, user_name);
 		res = pstmt->executeQuery();
-
-		//printResults();
 
 		if (res->rowsCount() == 0) {
 			//user doesn't exist

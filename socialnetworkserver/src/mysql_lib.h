@@ -1,10 +1,3 @@
-/*
- * mysql_lib.h
- *
- *  Created on: Oct 25, 2018
- *      Author: michael
- */
-
 #ifndef MYSQL_LIB_H_
 #define MYSQL_LIB_H_
 
@@ -23,6 +16,7 @@
 #include <cppconn/prepared_statement.h>
 
 #include "structures.h"
+using namespace std;
 
 string wall_entry_format(string timestamp, string poster, string postee,
 		string content);
@@ -33,7 +27,7 @@ class MySQLDatabaseDriver {
 	 * Call this once in the global space to initialize the MySQLDriver
 	 */
 public:
-	sql::Driver *driver; //deallocates itself, del not necessary
+	sql::Driver *driver;
 
 	MySQLDatabaseDriver();
 	~MySQLDatabaseDriver();
