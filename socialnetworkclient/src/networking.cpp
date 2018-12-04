@@ -391,8 +391,10 @@ int write_socket(int socketfd, struct packet &pkt) {
 	if(writeError < 0)
 		return writeError;
 
-	time_t sendTime;
-	sendTime = time(NULL);
+	auto sendTime = chrono::high_resolution_clock::now();
+
+	//time_t sendTime;
+	//sendTime = time(NULL);
 
 	struct packet ackPkt;
 
@@ -473,10 +475,14 @@ int write_socket(int socketfd, struct packet &pkt) {
 	pthread_mutex_lock(&logFilelock);
 	FILE * logFile;
 	logFile = fopen("log.txt","a");
-	time_t timeStamp;
-	timeStamp = time(NULL);
-	fprintf(logFile, "Write %d byte at %s\tPacket Type: %s\n", writeError, asctime(localtime(&sendTime)), getCommand(pkt.cmd_code));
-	fprintf(logFile, "Recieved ACK packet at %sResponse time: %lf ms\n\n", asctime(localtime(&timeStamp)), difftime(timeStamp, sendTime)*1000);
+	auto endTime = chrono::high_resolution_clock::now();
+	std::chrono::duration<double> response_time = endTime - sendTime;
+	std::time_t endTimeStamp = std::chrono::system_clock::to_time_t(endTime);
+	std::time_t sendTimeStamp = std::chrono::system_clock::to_time_t(sendTime);
+	//time_t timeStamp;
+	//timeStamp = time(NULL);
+	fprintf(logFile, "Write %d byte at %s\t[len: %u | cmd: %s | num: %u | sid: %u]\n", writeError, std::ctime(&sendTimeStamp), pkt.content_len, getCommand(pkt.cmd_code), pkt.req_num, pkt.sessionId);
+	fprintf(logFile, "Received ACK packet at %sResponse time: %f ms\n\n", std::ctime(&endTimeStamp), response_time.count()*1000);
 	fclose(logFile);
 	pthread_mutex_unlock(&logFilelock);
 	return 0;
@@ -543,7 +549,7 @@ int read_socket(int socketfd, struct packet &pkt) {
 		logFile = fopen("log.txt","a");
     		time_t timeStamp;
     		timeStamp = time(NULL);
-    		fprintf(logFile, "Read %d byte at %s\tPacket Type: %s\n\n", readError, asctime(localtime(&timeStamp)), getCommand(pkt.cmd_code));
+    		fprintf(logFile, "Read %d byte at %s\t[len: %u | cmd: %s | num: %u | sid: %u]\n\n", readError, asctime(localtime(&timeStamp)),  pkt.content_len, getCommand(pkt.cmd_code), pkt.req_num, pkt.sessionId);
 		fclose(logFile);
 		pthread_mutex_unlock(&logFilelock);
 		return readError;
