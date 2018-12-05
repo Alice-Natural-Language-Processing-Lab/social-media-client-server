@@ -1,9 +1,3 @@
-/*
- * main.cpp
- *
- *  Created on: Oct 17, 2018
- *      Author: pournami
- */
 #include <stdio.h>
 #include <string>
 #include <iostream>
@@ -13,7 +7,7 @@
 
 #define SERVER_URL "tcp://127.0.0.1:3306"
 #define SERVER_USERNAME "root"
-#define SERVER_PASSWORD "asdfgh"
+#define SERVER_PASSWORD "socialnetworkpswd"
 #define SERVER_DATABASE "SocialNetwork"
 
 using namespace std;
@@ -22,7 +16,7 @@ pthread_cond_t notify_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t notify_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 MySQLDatabaseDriver databaseDriver;
-MySQLDatabaseInterface database(&databaseDriver, SERVER_URL, SERVER_USERNAME,
+DatabaseCommandInterface database(databaseDriver, SERVER_URL, SERVER_USERNAME,
 								SERVER_PASSWORD, SERVER_DATABASE);
 
 int main(int argc, char *argv[])

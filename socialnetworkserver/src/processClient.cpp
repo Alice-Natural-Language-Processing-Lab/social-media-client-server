@@ -1,16 +1,10 @@
-/*
- * processClient.cpp
- *
- *  Created on: Oct 17, 2018
- *      Author: pournami
- */
 #include <time.h>
 #include "func_lib.h"
 #include "mysql_lib.h"
 #include "structures.h"
 
-extern MySQLDatabaseInterface database;
-
+extern DatabaseCommandInterface database;
+extern unsigned int sessionID;
 using namespace std;
 
 /*
@@ -20,22 +14,33 @@ using namespace std;
 void handleClient(int sock_fd)
 {
 	int sock_read, ret;
-	struct packet req;
+
 
 	/* Accept the request persistently*/
 	while(1)
 	{
-		memset(&req, 0, sizeof(struct packet));
+		struct packet req;
 
 		/* Read client request */
 		sock_read = read_socket(sock_fd, req);
 		if(sock_read < 0)
 		{
+			if (sock_read == -9)
+				continue;
 			printf("Error(read_socket)\n");
 			break;
 		}
-		if (!sock_read) /*Client connection EOF */
+		if (!sock_read ) /*Client connection EOF */
+		{
+			req.sessionId = sessionID;
+			ret = database.logout(req);
+			if (ret == -2)
+			{
+				printf("Error (logout): User logging out from database failed\n");
+				return;
+			}
 			break;
+		}
 
 		/* Parse the packet for valid packet structure */
 		ret = parsePacket(&req);
@@ -56,7 +61,7 @@ void handleClient(int sock_fd)
 		}
 
 		/* process the request */
-		ret = processRequest(sock_fd, &req);
+		ret = processRequest(sock_fd, req);
 		if (ret < 0)
 			break;
 	}

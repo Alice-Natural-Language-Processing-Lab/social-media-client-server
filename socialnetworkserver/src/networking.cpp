@@ -8,6 +8,13 @@
 
 unsigned int packetSeqNum = 0;
 bool isServer = false;
+pthread_mutex_t seqNumlock;
+pthread_mutex_t logFilelock;
+
+const char * getCommand(int enumVal)
+{
+  return commandList[enumVal];
+}
 
 int create_server_socket(int portNum) {
 	isServer = true;
@@ -19,6 +26,18 @@ int create_server_socket(int portNum) {
 		return -1;
 	}
 
+	//set reuse addr and port
+	int enable = 1;
+	if(setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+		char errorMessage[ERR_LEN];
+		fprintf(stderr, "setsockopt(SO_REUSEADDR) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
+		return -4;
+	}
+	if(setsockopt(socketfd, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(int)) < 0) {
+		char errorMessage[ERR_LEN];
+		fprintf(stderr, "setsockopt(SO_REUSEPORT) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
+		return -4;
+	}
 	struct sockaddr_in serverAddr;
 	memset(&serverAddr, 0, sizeof(serverAddr)); //Clear structure
 	serverAddr.sin_family = AF_INET;
@@ -37,30 +56,6 @@ int create_server_socket(int portNum) {
 		fprintf(stderr, "Failed to Listen; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
 		return -3;
 	}
-
-	//set reuse addr and port
-	int enable = 1;
-	if(setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
-		char errorMessage[ERR_LEN];
-		fprintf(stderr, "setsockopt(SO_REUSEADDR) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
-		return -4;
-	}
-	if(setsockopt(socketfd, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(int)) < 0) {
-		char errorMessage[ERR_LEN];
-		fprintf(stderr, "setsockopt(SO_REUSEPORT) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
-		return -4;
-	}
-
-/*
-	struct timeval tv;
-	tv.tv_sec = TIMEOUT_SEC;
-	tv.tv_usec = 0;
-	if(setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
-		char errorMessage[ERR_LEN];
-		fprintf(stderr, "setsockopt(TIMEOUT) failed; Error Message: %s\n", strerror_r(errno, errorMessage, ERR_LEN));
-		return errno;
-	}
-*/
 
 	return socketfd;
 }
@@ -142,8 +137,10 @@ int destroy_socket(int socketfd) {
 
 int write_socket(int socketfd, struct packet &pkt) {
 	if((isServer && pkt.cmd_code == NOTIFY) || (!isServer && pkt.cmd_code != ACK && pkt.cmd_code != NOTIFY)) {	//if the packet is a new request, assign a req-num to it
+		pthread_mutex_lock(&seqNumlock);
 		pkt.req_num = packetSeqNum;
 		packetSeqNum++;
+		pthread_mutex_unlock(&seqNumlock);
 	}
 
 	int contentLength = to_string(pkt.cmd_code).length() + to_string(pkt.req_num).length() + to_string(pkt.sessionId).length() + pkt.contents.username.length() + pkt.contents.password.length() + pkt.contents.postee.length() + pkt.contents.post.length() + pkt.contents.wallOwner.length() + pkt.contents.rcvd_cnts.length();
@@ -181,6 +178,12 @@ int write_socket(int socketfd, struct packet &pkt) {
 		fprintf(stderr, "Error (read): %s\n", strerror_r(errno, errorMessage, ERR_LEN));
 		return -1;
 	}
+	pthread_mutex_lock(&logFilelock);
+	FILE * logFile;
+	logFile = fopen("log.txt","a");
+	fprintf(logFile, "Packet Sent:\t [len: %u | cmd: %s | num: %u | sid: %u]\n", pkt.content_len, getCommand(pkt.cmd_code), pkt.req_num, pkt.sessionId);
+	fclose(logFile);
+	pthread_mutex_unlock(&logFilelock);
 	return 0;
 }
 
@@ -192,12 +195,12 @@ int read_socket(int socketfd, struct packet &pkt) {
 	char errorMessage[ERR_LEN];
 	char *buffer = (char *)malloc(sizeof(char) * MAX_PACKET_LEN);
 	char *bufferHead = buffer;
-	int packetLength = MAX_PACKET_LEN;
+	int packetLength = 90;
 
 	// Read each request stream repeatedly
 	while (1 == 1)
 	{
-		byteRead = read(socketfd, buffer, packetLength);
+		byteRead = read(socketfd, buffer, packetLength - totalRead);
 		if (byteRead < 0)
 		{
 			fprintf(stderr, "Error (read): %s\n", strerror_r(errno, errorMessage, ERR_LEN));
@@ -214,6 +217,8 @@ int read_socket(int socketfd, struct packet &pkt) {
 		if(startIndex != -1 && endIndex != -1) {
 			string contentLengthString = temp.substr(startIndex + 12, endIndex - startIndex - 12);
 			packetLength = 98 + contentLengthString.length() + stoi(contentLengthString);
+		} else {
+			packetLength = MAX_PACKET_LEN;
 		}
 		if (byteRead == 0 || packetLength <= totalRead)
 			break;
@@ -321,5 +326,11 @@ int read_socket(int socketfd, struct packet &pkt) {
 	if (component.length() > 0)
 		pkt.contents.rcvd_cnts = component;
 
+	pthread_mutex_lock(&logFilelock);
+	FILE * logFile;
+	logFile = fopen("log.txt","a");
+	fprintf(logFile, "Packet Received: [len: %u | cmd: %s | num: %u | sid: %u]\n", pkt.content_len, getCommand(pkt.cmd_code), pkt.req_num, pkt.sessionId);
+	fclose(logFile);
+	pthread_mutex_unlock(&logFilelock);
 	return totalRead;
 }
