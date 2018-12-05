@@ -1,4 +1,3 @@
-
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -32,9 +31,9 @@ int processResponse(int sock_fd, struct packet *resp);
  */
 void writeThread(int sock_fd)
 {
-	int sock_read;
+	int sock_read, sock_write, sock_close;
 	struct packet resp;
-	int ret;
+	int resp_len, ret;
 	/* Accept the response persistently*/
 	while(1)
 	{
@@ -63,7 +62,7 @@ void writeThread(int sock_fd)
 			return;
 		}
 	}
-	printf("Connection closed\nExiting Application\n\n");
+	printf("Connection closed\nExiting Application\n");
 	destroy_socket(sock_fd);
 	exit(0);
 }
@@ -80,6 +79,8 @@ int parsePacket(struct packet *resp)
 	switch (resp->cmd_code)
 	{
 	case LOGIN:
+		break;
+	case LOGOUT:
 		break;
 	case POST:
 		break;
@@ -106,7 +107,7 @@ int parsePacket(struct packet *resp)
 int processResponse(int sock_fd, struct packet *resp)
 {
 
-	if(resp->cmd_code == LIST || resp->cmd_code == SHOW || resp->cmd_code == NOTIFY || resp->cmd_code == POST || resp->cmd_code == LOGOUT)
+	if(resp->cmd_code == LIST || resp->cmd_code == SHOW || resp->cmd_code == POST || resp->cmd_code == NOTIFY || resp->cmd_code == LOGOUT)
 		displayContents(resp);
 	else if (resp->cmd_code == LOGIN)
 		if (!resp->contents.rcvd_cnts.length())

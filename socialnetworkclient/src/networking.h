@@ -25,6 +25,10 @@
 
 using namespace std;
 
+static const char * commandList[] = { "LOGIN", "LOGOUT", "POST", "SHOW", "LIST", "NOTIFY", "ACK" };
+
+const char * getCommand(int enumVal);
+
 /*
 return positive int socketfd when success
 return -1 if failed to create socket
