@@ -1,6 +1,4 @@
-# CMPE207-Project
-CMPE207 Project Repository
-
+# Social Media Server/Client Web Socket Application
 
 For demo purpose
 
